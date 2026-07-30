@@ -1,4 +1,4 @@
-export type TabId = "home" | "goals" | "insights" | "profile";
+export type TabId = "home" | "goals" | "insights" | "coach" | "profile";
 
 export type Goal = {
   id: string;

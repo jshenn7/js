@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BudgetDonut, RevenueSpendingBars, SpendingBars } from "./components/Charts";
 import {
+  AiIcon,
   ChartIcon,
   FlameIcon,
   HomeIcon,
@@ -90,12 +91,14 @@ function HomeDashboard({
   checkedIn,
   onCheckIn,
   onOpenGoals,
+  onOpenCoach,
   goals,
 }: {
   onAction: (id: string) => void;
   checkedIn: boolean;
   onCheckIn: () => void;
   onOpenGoals: () => void;
+  onOpenCoach: () => void;
   goals: Goal[];
 }) {
   return (
@@ -137,7 +140,7 @@ function HomeDashboard({
         })}
       </div>
 
-      <section className="coach" aria-label="AI coach tip">
+      <button className="coach" aria-label="AI coach tip" onClick={onOpenCoach}>
         <div className="ai-badge">AI</div>
         <div>
           <p className="coach-kicker">Coach tip</p>
@@ -145,7 +148,7 @@ function HomeDashboard({
             Ease up on dining out and your travel fund stays on schedule.
           </p>
         </div>
-      </section>
+      </button>
 
       <section className="section" aria-label="Goal preview">
         <div className="section-head">
@@ -322,13 +325,11 @@ function GoalsPanel({
   );
 }
 
-function InsightsPanel({ onSend }: { onSend: (q: string) => void }) {
-  const [query, setQuery] = useState("");
-
+function InsightsPanel() {
   return (
     <div className="panel">
       <h1 className="panel-hero">Insights</h1>
-      <p className="panel-sub">Spending patterns and coach guidance.</p>
+      <p className="panel-sub">Spending patterns, revenue, and money flows.</p>
 
       <section className="section" aria-label="Spending overview">
         <div className="section-head">
@@ -408,6 +409,17 @@ function InsightsPanel({ onSend }: { onSend: (q: string) => void }) {
           </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+function CoachPanel({ onSend }: { onSend: (q: string) => void }) {
+  const [query, setQuery] = useState("");
+
+  return (
+    <div className="panel">
+      <h1 className="panel-hero">AI Coach</h1>
+      <p className="panel-sub">Nudges, answers, and habit tips in one place.</p>
 
       <section className="section" aria-label="Coach tips">
         <div className="section-head">
@@ -422,6 +434,20 @@ function InsightsPanel({ onSend }: { onSend: (q: string) => void }) {
         </div>
       </section>
 
+      <div className="chat-list">
+        <article className="chat-bubble you">
+          <span className="label">You</span>
+          <p>How do I fund travel faster?</p>
+        </article>
+        <article className="chat-bubble">
+          <span className="label">Coach</span>
+          <p>
+            Trim dining ~$35/week and auto-send it to Travel. That lands you about
+            three weeks sooner.
+          </p>
+        </article>
+      </div>
+
       <form
         className="chat-input"
         onSubmit={(e) => {
@@ -434,8 +460,8 @@ function InsightsPanel({ onSend }: { onSend: (q: string) => void }) {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Ask about your spending…"
-          aria-label="Ask about insights"
+          placeholder="Ask your coach…"
+          aria-label="Ask AI coach"
         />
         <button type="submit">Ask</button>
       </form>
@@ -607,7 +633,7 @@ export default function App() {
 
   const handleAction = (id: string) => {
     if (id === "ask") {
-      setTab("insights");
+      setTab("coach");
       return;
     }
     if (id === "goal") {
@@ -649,6 +675,7 @@ export default function App() {
               checkedIn={checkedIn}
               onCheckIn={handleCheckIn}
               onOpenGoals={() => setTab("goals")}
+              onOpenCoach={() => setTab("coach")}
               goals={goals}
             />
           )}
@@ -662,8 +689,9 @@ export default function App() {
               onCreateGoal={handleCreateGoal}
             />
           )}
-          {tab === "insights" && (
-            <InsightsPanel onSend={(q) => showToast(`Asked: ${q.slice(0, 28)}…`)} />
+          {tab === "insights" && <InsightsPanel />}
+          {tab === "coach" && (
+            <CoachPanel onSend={(q) => showToast(`Asked: ${q.slice(0, 28)}…`)} />
           )}
           {tab === "profile" && (
             <ProfilePanel cheers={cheers} onCheer={handleCheer} />
@@ -695,6 +723,13 @@ export default function App() {
           >
             <ChartIcon />
             Insights
+          </button>
+          <button
+            className={`nav-item${tab === "coach" ? " active" : ""}`}
+            onClick={() => setTab("coach")}
+          >
+            <AiIcon />
+            Coach
           </button>
           <button
             className={`nav-item${tab === "profile" ? " active" : ""}`}

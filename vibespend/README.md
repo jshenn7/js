@@ -23,6 +23,7 @@ npm run preview
 
 - Home dashboard with streak check-in and goal snapshot
 - Goals tab for savings targets
-- Insights tab with spending charts, coach notes, and ask AI
+- Insights tab with spending charts, revenue vs spending, and money-flow tables
+- Coach tab for AI tips and ask chat
 - Profile with level/XP, badges, friends leaderboard, and cheerable friend wins
-- Bottom navigation: Home, Goals, Insights, Profile
+- Bottom navigation: Home, Goals, Insights, Coach, Profile
