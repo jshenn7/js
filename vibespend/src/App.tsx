@@ -29,9 +29,11 @@ import {
   quickActions,
   savingsGoals,
   streak,
+  subscriptions as initialSubscriptions,
   topIncome,
   topSpending,
   type Goal,
+  type Subscription,
   type TabId,
 } from "./data";
 import "./App.css";
@@ -368,7 +370,38 @@ function GoalsPanel({
   );
 }
 
-function InsightsPanel() {
+function formatSubMoney(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
+}
+
+function InsightsPanel({
+  onToast,
+}: {
+  onToast: (message: string) => void;
+}) {
+  const [subs, setSubs] = useState<Subscription[]>(initialSubscriptions);
+
+  const activeMonthly = subs
+    .filter((s) => s.active)
+    .reduce(
+      (sum, s) => sum + (s.cadence === "Yearly" ? s.amount / 12 : s.amount),
+      0,
+    );
+
+  const toggleSub = (id: string) => {
+    setSubs((prev) =>
+      prev.map((s) => {
+        if (s.id !== id) return s;
+        const next = { ...s, active: !s.active };
+        onToast(next.active ? `${s.name} reactivated` : `${s.name} canceled`);
+        return next;
+      }),
+    );
+  };
+
   return (
     <div className="panel">
       <h1 className="panel-hero">Insights</h1>
@@ -459,6 +492,36 @@ function InsightsPanel() {
             </table>
           </div>
         </div>
+      </section>
+
+      <section className="section" aria-label="Manage subscriptions">
+        <div className="section-head">
+          <h2>Manage subscriptions</h2>
+          <span>{formatSubMoney(activeMonthly)}/mo</span>
+        </div>
+        <p className="subs-lead">
+          Review recurring charges and cancel ones you don&apos;t need.
+        </p>
+        <ul className="subs-list">
+          {subs.map((sub) => (
+            <li key={sub.id} className={sub.active ? "" : "canceled"}>
+              <div>
+                <strong>{sub.name}</strong>
+                <p>
+                  {formatSubMoney(sub.amount)} · {sub.cadence}
+                  {sub.active ? ` · next ${sub.nextBill}` : " · canceled"}
+                </p>
+              </div>
+              <button
+                type="button"
+                className={`sub-action${sub.active ? "" : " revive"}`}
+                onClick={() => toggleSub(sub.id)}
+              >
+                {sub.active ? "Cancel" : "Restore"}
+              </button>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );
@@ -837,7 +900,7 @@ export default function App() {
               onCreateGoal={handleCreateGoal}
             />
           )}
-          {tab === "insights" && <InsightsPanel />}
+          {tab === "insights" && <InsightsPanel onToast={showToast} />}
           {tab === "coach" && (
             <CoachPanel onSend={(q) => showToast(`Asked: ${q.slice(0, 28)}…`)} />
           )}

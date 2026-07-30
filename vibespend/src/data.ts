@@ -86,6 +86,58 @@ export const recentInsights = [
   { day: "Sun", saved: 48, spent: 45 },
 ];
 
+export type Subscription = {
+  id: string;
+  name: string;
+  amount: number;
+  cadence: "Monthly" | "Yearly";
+  nextBill: string;
+  active: boolean;
+};
+
+export const subscriptions: Subscription[] = [
+  {
+    id: "netflix",
+    name: "Netflix",
+    amount: 15.49,
+    cadence: "Monthly",
+    nextBill: "Apr 4",
+    active: true,
+  },
+  {
+    id: "spotify",
+    name: "Spotify",
+    amount: 11.99,
+    cadence: "Monthly",
+    nextBill: "Apr 9",
+    active: true,
+  },
+  {
+    id: "icloud",
+    name: "iCloud+",
+    amount: 2.99,
+    cadence: "Monthly",
+    nextBill: "Apr 12",
+    active: true,
+  },
+  {
+    id: "adobe",
+    name: "Adobe CC",
+    amount: 54.99,
+    cadence: "Monthly",
+    nextBill: "Apr 18",
+    active: true,
+  },
+  {
+    id: "nytimes",
+    name: "NY Times",
+    amount: 4.0,
+    cadence: "Monthly",
+    nextBill: "Apr 21",
+    active: false,
+  },
+];
+
 export const savingsGoals: Goal[] = [
   {
     id: "emergency",
