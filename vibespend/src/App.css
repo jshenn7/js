@@ -367,6 +367,40 @@
   height: 8px;
   border-radius: 50%;
   display: block;
+  flex-shrink: 0;
+}
+
+.legend.detailed {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  width: min(100%, 220px);
+  margin: 0 auto;
+}
+
+.legend.detailed li {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 6px 8px;
+  align-items: center;
+  font-size: 0.72rem;
+}
+
+.legend-name {
+  color: var(--ink);
+}
+
+.legend-pct {
+  font-variant-numeric: tabular-nums;
+  color: var(--teal-deep);
+  font-weight: 800;
+}
+
+.legend-amt {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+  min-width: 2.6rem;
+  text-align: right;
 }
 
 .trend-label {

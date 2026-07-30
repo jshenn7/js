@@ -15,21 +15,97 @@ import {
 } from "recharts";
 import { budgetCategories, recentInsights, revenueVsSpending, spendingTrend } from "../data";
 
+const budgetTotal = budgetCategories.reduce((sum, c) => sum + c.value, 0);
+const MONTHLY_SPEND = 2400;
+
+function budgetPercent(value: number) {
+  return Math.round((value / budgetTotal) * 100);
+}
+
+function renderBudgetLabel({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  value,
+}: {
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+  value?: number;
+}) {
+  if (
+    cx == null ||
+    cy == null ||
+    midAngle == null ||
+    innerRadius == null ||
+    outerRadius == null ||
+    value == null
+  ) {
+    return null;
+  }
+
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.52;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  const pct = budgetPercent(value);
+
+  if (pct < 8) return null;
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#ffffff"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={10}
+      fontWeight={800}
+      fontFamily="Manrope, sans-serif"
+    >
+      {pct}%
+    </text>
+  );
+}
+
 export function BudgetDonut() {
   return (
     <div className="chart-block">
       <div className="donut-wrap">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
+            <Tooltip
+              formatter={(value, name) => {
+                const amount = Math.round((Number(value) / budgetTotal) * MONTHLY_SPEND);
+                return [
+                  `${budgetPercent(Number(value))}% · $${amount.toLocaleString("en-US")}`,
+                  String(name),
+                ];
+              }}
+              contentStyle={{
+                borderRadius: 12,
+                border: "none",
+                boxShadow: "0 8px 20px rgba(22, 68, 78, 0.12)",
+                fontFamily: "Manrope, sans-serif",
+                fontSize: 12,
+                fontWeight: 700,
+              }}
+            />
             <Pie
               data={budgetCategories}
               dataKey="value"
               nameKey="name"
-              innerRadius="62%"
+              innerRadius="54%"
               outerRadius="90%"
-              paddingAngle={2.5}
+              paddingAngle={2}
               stroke="none"
               animationDuration={850}
+              label={renderBudgetLabel}
+              labelLine={false}
             >
               {budgetCategories.map((entry) => (
                 <Cell key={entry.name} fill={entry.color} />
@@ -42,13 +118,19 @@ export function BudgetDonut() {
           <strong>$2.4k</strong>
         </div>
       </div>
-      <ul className="legend">
-        {budgetCategories.map((c) => (
-          <li key={c.name}>
-            <i style={{ background: c.color }} />
-            {c.name}
-          </li>
-        ))}
+      <ul className="legend detailed">
+        {budgetCategories.map((c) => {
+          const pct = budgetPercent(c.value);
+          const amount = Math.round((c.value / budgetTotal) * MONTHLY_SPEND);
+          return (
+            <li key={c.name}>
+              <i style={{ background: c.color }} />
+              <span className="legend-name">{c.name}</span>
+              <span className="legend-pct">{pct}%</span>
+              <span className="legend-amt">${amount.toLocaleString("en-US")}</span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
