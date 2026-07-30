@@ -52,6 +52,14 @@ export const spendingTrend = [
   { month: "Oct", amount: 88 },
 ];
 
+export const revenueVsSpending = [
+  { month: "Jun", revenue: 4200, spending: 3180 },
+  { month: "Jul", revenue: 4350, spending: 2960 },
+  { month: "Aug", revenue: 4100, spending: 3520 },
+  { month: "Sep", revenue: 4480, spending: 3080 },
+  { month: "Oct", revenue: 4600, spending: 2840 },
+];
+
 export const savingsGoals: Goal[] = [
   {
     id: "emergency",

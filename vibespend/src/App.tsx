@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BudgetDonut, SpendingBars } from "./components/Charts";
+import { BudgetDonut, RevenueSpendingBars, SpendingBars } from "./components/Charts";
 import {
   ChartIcon,
   FlameIcon,
@@ -340,6 +340,14 @@ function InsightsPanel({ onSend }: { onSend: (q: string) => void }) {
             <SpendingBars />
           </div>
         </div>
+      </section>
+
+      <section className="section" aria-label="Revenue and spending">
+        <div className="section-head">
+          <h2>Revenue & spending</h2>
+          <span>last 5 months</span>
+        </div>
+        <RevenueSpendingBars />
       </section>
 
       <section className="section" aria-label="Coach tips">
