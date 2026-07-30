@@ -21,8 +21,9 @@ npm run preview
 
 ## What’s included
 
-- Home dashboard with budget distribution (donut) and monthly spending trend (bars)
-- Savings goals with animated progress
-- Quick actions: Add Expense, Transfer, New Goal, Report, Ask AI
-- AI Coach insights and unlocked achievements
-- Bottom navigation across Home, AI Coach, Ask AI, and Achievements
+- Home dashboard with streak check-in, budget charts, and savings goals
+- Quick actions: Add, Move, Goal, Ask AI
+- Friends/community feed with cheerable savings wins + weekly leaderboard
+- AI Coach tips and chat
+- Profile with level/XP, streak stats, and badges
+- Bottom navigation: Home, Friends, Coach, Profile

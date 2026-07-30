@@ -103,3 +103,45 @@ export function ChartIcon({ size = 22, stroke = 2 }: IconProps) {
     </svg>
   );
 }
+
+export function PeopleIcon({ size = 22, stroke = 1.8 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth={stroke} />
+      <circle cx="17" cy="9" r="2.4" stroke="currentColor" strokeWidth={stroke} />
+      <path
+        d="M3.5 18.5c.8-3 2.8-4.5 5.5-4.5s4.7 1.5 5.5 4.5M14.2 14.2c1.6-.4 3.3.2 4.3 2.3"
+        stroke="currentColor"
+        strokeWidth={stroke}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function ProfileIcon({ size = 22, stroke = 1.8 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth={stroke} />
+      <path
+        d="M5 19c1.2-3.2 3.4-4.8 7-4.8s5.8 1.6 7 4.8"
+        stroke="currentColor"
+        strokeWidth={stroke}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function FlameIcon({ size = 22, stroke = 1.8 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 3c1.2 2.2.4 3.8-.6 5-1.4 1.7-2.4 3.2-2.4 5.2A5 5 0 0 0 14 18.2c2.4-.7 3.8-2.8 3.8-5.2 0-2.6-1.4-4.3-2.6-5.6.8 2-.2 3.4-1.4 3.8C15 8.4 13.8 5.8 12 3Z"
+        stroke="currentColor"
+        strokeWidth={stroke}
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
