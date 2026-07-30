@@ -35,7 +35,7 @@ function HomeDashboard({
     <div className="panel home">
       <header className="hero">
         <p className="brand">
-          Vibe<span>Spend</span>
+          Mint<span>ly</span>
         </p>
         <h1>
           On track, Alex.
@@ -249,7 +249,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <div className="phone" role="application" aria-label="VibeSpend finance app">
+      <div className="phone" role="application" aria-label="Mintly finance app">
         <div className="glow" aria-hidden />
         <main className="screen">
           {tab === "home" && (
