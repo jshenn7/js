@@ -145,3 +145,13 @@ export function FlameIcon({ size = 22, stroke = 1.8 }: IconProps) {
     </svg>
   );
 }
+
+export function TargetIcon({ size = 22, stroke = 1.8 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="8.25" stroke="currentColor" strokeWidth={stroke} />
+      <circle cx="12" cy="12" r="4.5" stroke="currentColor" strokeWidth={stroke} />
+      <circle cx="12" cy="12" r="1.4" fill="currentColor" />
+    </svg>
+  );
+}

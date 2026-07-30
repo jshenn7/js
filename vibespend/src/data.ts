@@ -1,4 +1,4 @@
-export type TabId = "home" | "community" | "coach" | "profile";
+export type TabId = "home" | "goals" | "insights" | "profile";
 
 export const profile = {
   name: "Alex Rivera",

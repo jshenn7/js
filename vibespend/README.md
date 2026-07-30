@@ -21,9 +21,8 @@ npm run preview
 
 ## What’s included
 
-- Home dashboard with streak check-in, budget charts, and savings goals
-- Quick actions: Add, Move, Goal, Ask AI
-- Friends/community feed with cheerable savings wins + weekly leaderboard
-- AI Coach tips and chat
-- Profile with level/XP, streak stats, and badges
-- Bottom navigation: Home, Friends, Coach, Profile
+- Home dashboard with streak check-in and goal snapshot
+- Goals tab for savings targets
+- Insights tab with spending charts, coach notes, and ask AI
+- Profile with level/XP, badges, friends leaderboard, and cheerable friend wins
+- Bottom navigation: Home, Goals, Insights, Profile

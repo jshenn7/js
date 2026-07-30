@@ -385,9 +385,38 @@
   gap: 14px;
 }
 
-.goal-row {
+.goals-full {
+  gap: 16px;
+}
+
+.goal-row,
+.goal-block {
   display: grid;
   gap: 7px;
+}
+
+.goal-note {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.panel-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.panel-top .panel-sub {
+  margin-bottom: 16px;
+}
+
+.text-link {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--teal-deep);
 }
 
 .goal-meta {

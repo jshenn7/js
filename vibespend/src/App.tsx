@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { BudgetDonut, SpendingBars } from "./components/Charts";
 import {
-  AiIcon,
+  ChartIcon,
   FlameIcon,
   HomeIcon,
-  PeopleIcon,
   PlusIcon,
   ProfileIcon,
   SparkIcon,
+  TargetIcon,
   TransferIcon,
   TrophyIcon,
 } from "./components/Icons";
@@ -68,14 +68,14 @@ function StreakStrip({
 
 function HomeDashboard({
   onAction,
-  goalsReady,
   checkedIn,
   onCheckIn,
+  onOpenGoals,
 }: {
   onAction: (id: string) => void;
-  goalsReady: boolean;
   checkedIn: boolean;
   onCheckIn: () => void;
+  onOpenGoals: () => void;
 }) {
   return (
     <div className="panel home">
@@ -116,6 +116,107 @@ function HomeDashboard({
         })}
       </div>
 
+      <section className="coach" aria-label="AI coach tip">
+        <div className="ai-badge">AI</div>
+        <div>
+          <p className="coach-kicker">Coach tip</p>
+          <p className="coach-copy">
+            Ease up on dining out and your travel fund stays on schedule.
+          </p>
+        </div>
+      </section>
+
+      <section className="section" aria-label="Goal preview">
+        <div className="section-head">
+          <h2>Goals snapshot</h2>
+          <button className="text-link" onClick={onOpenGoals}>
+            See all
+          </button>
+        </div>
+        <div className="goals">
+          {savingsGoals.slice(0, 2).map((goal) => (
+            <div className="goal-row" key={goal.id}>
+              <div className="goal-meta">
+                <span>{goal.name}</span>
+                <span>{goal.progress}%</span>
+              </div>
+              <div className="track">
+                <div
+                  className="fill"
+                  style={{
+                    width: `${goal.progress}%`,
+                    background: "linear-gradient(90deg, #3d8ea5, #2a9d8f)",
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function GoalsPanel({
+  goalsReady,
+  onAddGoal,
+}: {
+  goalsReady: boolean;
+  onAddGoal: () => void;
+}) {
+  return (
+    <div className="panel">
+      <div className="panel-top">
+        <div>
+          <h1 className="panel-hero">Goals</h1>
+          <p className="panel-sub">Track what you&apos;re saving toward.</p>
+        </div>
+        <button className="checkin-btn" onClick={onAddGoal}>
+          New
+        </button>
+      </div>
+
+      <div className="goals goals-full">
+        {savingsGoals.map((goal) => (
+          <article className="goal-block" key={goal.id}>
+            <div className="goal-meta">
+              <span>{goal.name}</span>
+              <span>
+                {goal.progress}% · {goal.target}
+              </span>
+            </div>
+            <div className="track">
+              <div
+                className="fill"
+                style={{
+                  width: goalsReady ? `${goal.progress}%` : "0%",
+                  background:
+                    goal.progress >= 100
+                      ? "linear-gradient(90deg, #2a9d8f, #57c4a8)"
+                      : "linear-gradient(90deg, #3d8ea5, #2a9d8f)",
+                }}
+              />
+            </div>
+            <p className="goal-note">
+              {goal.progress >= 100
+                ? "Complete — nice work."
+                : `Keep going to reach ${goal.target}.`}
+            </p>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function InsightsPanel({ onSend }: { onSend: (q: string) => void }) {
+  const [query, setQuery] = useState("");
+
+  return (
+    <div className="panel">
+      <h1 className="panel-hero">Insights</h1>
+      <p className="panel-sub">Spending patterns and coach guidance.</p>
+
       <section className="section" aria-label="Spending overview">
         <div className="section-head">
           <h2>This month</h2>
@@ -130,66 +231,122 @@ function HomeDashboard({
         </div>
       </section>
 
-      <section className="section" aria-label="Savings goals">
+      <section className="section" aria-label="Coach tips">
         <div className="section-head">
-          <h2>Goals</h2>
-          <span>3 active</span>
+          <h2>Coach notes</h2>
         </div>
-        <div className="goals">
-          {savingsGoals.map((goal) => (
-            <div className="goal-row" key={goal.id}>
-              <div className="goal-meta">
-                <span>{goal.name}</span>
-                <span>
-                  {goal.progress}% · {goal.target}
-                </span>
-              </div>
-              <div className="track">
-                <div
-                  className="fill"
-                  style={{
-                    width: goalsReady ? `${goal.progress}%` : "0%",
-                    background:
-                      goal.progress >= 100
-                        ? "linear-gradient(90deg, #2a9d8f, #57c4a8)"
-                        : "linear-gradient(90deg, #3d8ea5, #2a9d8f)",
-                  }}
-                />
-              </div>
-            </div>
+        <div className="tip-list">
+          {coachTips.map((tip) => (
+            <article className="tip-item" key={tip}>
+              {tip}
+            </article>
           ))}
         </div>
       </section>
 
-      <section className="coach" aria-label="AI coach tip">
-        <div className="ai-badge">AI</div>
-        <div>
-          <p className="coach-kicker">Coach tip</p>
-          <p className="coach-copy">
-            Ease up on dining out and your travel fund stays on schedule.
-          </p>
-        </div>
-      </section>
+      <form
+        className="chat-input"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!query.trim()) return;
+          onSend(query.trim());
+          setQuery("");
+        }}
+      >
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Ask about your spending…"
+          aria-label="Ask about insights"
+        />
+        <button type="submit">Ask</button>
+      </form>
     </div>
   );
 }
 
-function CommunityPanel({
+function ProfilePanel({
   cheers,
   onCheer,
 }: {
   cheers: Record<string, number>;
   onCheer: (id: string) => void;
 }) {
+  const xpPct = Math.round((profile.xp / profile.xpToNext) * 100);
+
   return (
     <div className="panel">
-      <h1 className="panel-hero">Community</h1>
-      <p className="panel-sub">See how friends are saving — cheer them on.</p>
+      <header className="profile-head">
+        <div className="profile-avatar" aria-hidden>
+          AR
+        </div>
+        <div>
+          <h1 className="panel-hero" style={{ marginBottom: 2 }}>
+            {profile.name}
+          </h1>
+          <p className="handle">
+            {profile.handle} · {profile.city}
+          </p>
+        </div>
+      </header>
 
-      <section className="section" aria-label="Weekly leaders">
+      <section className="profile-stats" aria-label="Profile stats">
+        <div>
+          <strong>{streak.current}</strong>
+          <span>Streak</span>
+        </div>
+        <div>
+          <strong>{profile.totalSaved}</strong>
+          <span>Saved</span>
+        </div>
+        <div>
+          <strong>{profile.budgetsHit}</strong>
+          <span>Budgets hit</span>
+        </div>
+      </section>
+
+      <section className="section" aria-label="Level progress">
         <div className="section-head">
-          <h2>This week</h2>
-          <span>by streak</span>
+          <h2>Level {profile.level}</h2>
+          <span>
+            {profile.xp}/{profile.xpToNext} XP
+          </span>
+        </div>
+        <div className="track">
+          <div
+            className="fill"
+            style={{
+              width: `${xpPct}%`,
+              background: "linear-gradient(90deg, #e07a5f, #f2cc8f)",
+            }}
+          />
+        </div>
+      </section>
+
+      <section className="section" aria-label="Badges">
+        <div className="section-head">
+          <h2>Badges</h2>
+          <span>{achievements.length} earned</span>
+        </div>
+        <div className="badge-grid">
+          {achievements.slice(0, 3).map((item) => (
+            <article className="badge-row" key={item.id}>
+              <div className="badge-emoji" aria-hidden>
+                {item.emoji}
+              </div>
+              <div>
+                <h3>{item.title}</h3>
+                <p>{item.detail}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="section" aria-label="Friends">
+        <div className="section-head">
+          <h2>Friends</h2>
+          <span>this week</span>
         </div>
         <ol className="leaders">
           {leaderboard.map((row, i) => (
@@ -231,135 +388,7 @@ function CommunityPanel({
           ))}
         </div>
       </section>
-    </div>
-  );
-}
 
-function CoachPanel({ onSend }: { onSend: (q: string) => void }) {
-  const [query, setQuery] = useState("");
-
-  return (
-    <div className="panel">
-      <h1 className="panel-hero">AI Coach</h1>
-      <p className="panel-sub">Nudges, answers, and habit tips in one place.</p>
-      <div className="tip-list">
-        {coachTips.map((tip) => (
-          <article className="tip-item" key={tip}>
-            {tip}
-          </article>
-        ))}
-      </div>
-      <div className="chat-list" style={{ marginTop: 14 }}>
-        <article className="chat-bubble you">
-          <span className="label">You</span>
-          <p>How do I fund travel faster?</p>
-        </article>
-        <article className="chat-bubble">
-          <span className="label">Coach</span>
-          <p>
-            Trim dining ~$35/week and auto-send it to Travel. That lands you about
-            three weeks sooner.
-          </p>
-        </article>
-      </div>
-      <form
-        className="chat-input"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!query.trim()) return;
-          onSend(query.trim());
-          setQuery("");
-        }}
-      >
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Ask your coach…"
-          aria-label="Ask AI coach"
-        />
-        <button type="submit">Ask</button>
-      </form>
-    </div>
-  );
-}
-
-function ProfilePanel({ onOpenCommunity }: { onOpenCommunity: () => void }) {
-  const xpPct = Math.round((profile.xp / profile.xpToNext) * 100);
-
-  return (
-    <div className="panel">
-      <header className="profile-head">
-        <div className="profile-avatar" aria-hidden>
-          AR
-        </div>
-        <div>
-          <h1 className="panel-hero" style={{ marginBottom: 2 }}>
-            {profile.name}
-          </h1>
-          <p className="handle">
-            {profile.handle} · {profile.city}
-          </p>
-        </div>
-      </header>
-
-      <section className="profile-stats" aria-label="Profile stats">
-        <div>
-          <strong>{streak.current}</strong>
-          <span>Streak</span>
-        </div>
-        <div>
-          <strong>{profile.totalSaved}</strong>
-          <span>Saved</span>
-        </div>
-        <div>
-          <strong>{profile.budgetsHit}</strong>
-          <span>Budgets hit</span>
-        </div>
-      </section>
-
-      <section className="section" aria-label="Level progress">
-        <div className="section-head">
-          <h2>
-            Level {profile.level}
-          </h2>
-          <span>
-            {profile.xp}/{profile.xpToNext} XP
-          </span>
-        </div>
-        <div className="track">
-          <div
-            className="fill"
-            style={{
-              width: `${xpPct}%`,
-              background: "linear-gradient(90deg, #e07a5f, #f2cc8f)",
-            }}
-          />
-        </div>
-      </section>
-
-      <section className="section" aria-label="Badges">
-        <div className="section-head">
-          <h2>Badges</h2>
-          <span>{achievements.length} earned</span>
-        </div>
-        <div className="badge-grid">
-          {achievements.map((item) => (
-            <article className="badge-row" key={item.id}>
-              <div className="badge-emoji" aria-hidden>
-                {item.emoji}
-              </div>
-              <div>
-                <h3>{item.title}</h3>
-                <p>{item.detail}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <button className="profile-link" onClick={onOpenCommunity}>
-        See friends in Community →
-      </button>
       <p className="joined">Joined {profile.joined}</p>
     </div>
   );
@@ -389,13 +418,17 @@ export default function App() {
 
   const handleAction = (id: string) => {
     if (id === "ask") {
-      setTab("coach");
+      setTab("insights");
+      return;
+    }
+    if (id === "goal") {
+      setTab("goals");
+      showToast("New goal draft ready");
       return;
     }
     const labels: Record<string, string> = {
       expense: "Ready to log an expense",
       transfer: "Transfer started",
-      goal: "New goal draft ready",
     };
     showToast(labels[id] ?? "Done");
   };
@@ -419,19 +452,22 @@ export default function App() {
           {tab === "home" && (
             <HomeDashboard
               onAction={handleAction}
-              goalsReady={goalsReady}
               checkedIn={checkedIn}
               onCheckIn={handleCheckIn}
+              onOpenGoals={() => setTab("goals")}
             />
           )}
-          {tab === "community" && (
-            <CommunityPanel cheers={cheers} onCheer={handleCheer} />
+          {tab === "goals" && (
+            <GoalsPanel
+              goalsReady={goalsReady}
+              onAddGoal={() => showToast("New goal draft ready")}
+            />
           )}
-          {tab === "coach" && (
-            <CoachPanel onSend={(q) => showToast(`Asked: ${q.slice(0, 28)}…`)} />
+          {tab === "insights" && (
+            <InsightsPanel onSend={(q) => showToast(`Asked: ${q.slice(0, 28)}…`)} />
           )}
           {tab === "profile" && (
-            <ProfilePanel onOpenCommunity={() => setTab("community")} />
+            <ProfilePanel cheers={cheers} onCheer={handleCheer} />
           )}
         </main>
 
@@ -448,18 +484,18 @@ export default function App() {
             Home
           </button>
           <button
-            className={`nav-item${tab === "community" ? " active" : ""}`}
-            onClick={() => setTab("community")}
+            className={`nav-item${tab === "goals" ? " active" : ""}`}
+            onClick={() => setTab("goals")}
           >
-            <PeopleIcon />
-            Friends
+            <TargetIcon />
+            Goals
           </button>
           <button
-            className={`nav-item${tab === "coach" ? " active" : ""}`}
-            onClick={() => setTab("coach")}
+            className={`nav-item${tab === "insights" ? " active" : ""}`}
+            onClick={() => setTab("insights")}
           >
-            <AiIcon />
-            Coach
+            <ChartIcon />
+            Insights
           </button>
           <button
             className={`nav-item${tab === "profile" ? " active" : ""}`}
