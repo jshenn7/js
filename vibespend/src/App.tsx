@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { BudgetDonut, SpendingBars } from "./components/Charts";
 import {
   AiIcon,
-  ChartIcon,
   HomeIcon,
   PlusIcon,
   SparkIcon,
@@ -22,22 +21,8 @@ const actionIcons = {
   plus: PlusIcon,
   transfer: TransferIcon,
   trophy: TrophyIcon,
-  chart: ChartIcon,
   spark: SparkIcon,
 } as const;
-
-function StatusBar() {
-  return (
-    <div className="status-bar" aria-hidden>
-      <strong>9:41</strong>
-      <div className="status-icons">
-        <span className="sig" />
-        <span className="wifi" />
-        <span className="batt" />
-      </div>
-    </div>
-  );
-}
 
 function HomeDashboard({
   onAction,
@@ -47,36 +32,73 @@ function HomeDashboard({
   goalsReady: boolean;
 }) {
   return (
-    <div className="panel">
-      <div className="brand-row">
-        <div className="brand">
+    <div className="panel home">
+      <header className="hero">
+        <p className="brand">
           Vibe<span>Spend</span>
-        </div>
-      </div>
-      <p className="greeting">
-        Hey Alex, you&apos;re on track and have a new achievement! 🙂
-      </p>
+        </p>
+        <h1>
+          On track, Alex.
+          <br />
+          <em>Keep the streak going.</em>
+        </h1>
+        <p className="lede">A quick pulse on budget, goals, and what to do next.</p>
+      </header>
 
-      <section className="card charts-row" aria-label="Budget overview">
-        <BudgetDonut />
-        <SpendingBars />
+      <div className="actions" aria-label="Quick actions">
+        {quickActions.map((action) => {
+          const Icon = actionIcons[action.icon];
+          return (
+            <button
+              key={action.id}
+              className="action-btn"
+              style={{ background: action.color }}
+              onClick={() => onAction(action.id)}
+            >
+              <Icon size={20} />
+              <span>{action.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <section className="section" aria-label="Spending overview">
+        <div className="section-head">
+          <h2>This month</h2>
+          <span>vs last month ↓ 8%</span>
+        </div>
+        <div className="overview">
+          <BudgetDonut />
+          <div className="trend">
+            <p className="trend-label">Spending trend</p>
+            <SpendingBars />
+          </div>
+        </div>
       </section>
 
-      <section className="card" aria-label="Savings goals">
-        <h2 className="section-title">Savings Goals</h2>
+      <section className="section" aria-label="Savings goals">
+        <div className="section-head">
+          <h2>Goals</h2>
+          <span>3 active</span>
+        </div>
         <div className="goals">
           {savingsGoals.map((goal) => (
             <div className="goal-row" key={goal.id}>
               <div className="goal-meta">
                 <span>{goal.name}</span>
-                <span>{goal.progress}%</span>
+                <span>
+                  {goal.progress}% · {goal.target}
+                </span>
               </div>
               <div className="track">
                 <div
-                  className={`fill${goalsReady ? " ready" : ""}`}
+                  className="fill"
                   style={{
                     width: goalsReady ? `${goal.progress}%` : "0%",
-                    background: goal.progress === 0 ? "#d7e1e4" : goal.color,
+                    background:
+                      goal.progress >= 100
+                        ? "linear-gradient(90deg, #2a9d8f, #57c4a8)"
+                        : "linear-gradient(90deg, #3d8ea5, #2a9d8f)",
                   }}
                 />
               </div>
@@ -85,50 +107,31 @@ function HomeDashboard({
         </div>
       </section>
 
-      <div className="actions" aria-label="Quick actions">
-        {quickActions.map((action) => {
-          const Icon = actionIcons[action.icon];
-          return (
-            <div className="action" key={action.id}>
-              <button
-                className="action-btn"
-                style={{ background: action.color }}
-                aria-label={action.label}
-                onClick={() => onAction(action.id)}
-              >
-                <Icon size={22} />
-              </button>
-              <span>{action.label}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      <section className="card coach-card" aria-label="AI coach and achievements">
-        <div className="coach-row">
-          <div className="ai-badge">AI</div>
+      <section className="coach" aria-label="AI coach tip">
+        <div className="ai-badge">AI</div>
+        <div>
+          <p className="coach-kicker">Coach tip</p>
           <p className="coach-copy">
-            <strong>Coach:</strong> Consider reducing dining out to hit your travel
-            goal!
+            Ease up on dining out and your travel fund stays on schedule.
           </p>
         </div>
-        <div className="divider" />
-        <div>
-          <div className="achievements-head">
-            <h3>Achievements Unlocked</h3>
-            <div className="trophy-stack" aria-hidden>
-              <span className="trophy">🏆</span>
-              <span className="trophy small">🏆</span>
-            </div>
-          </div>
-          <ul className="achievement-list">
-            {achievements.map((item) => (
-              <li key={item.id}>
-                {item.emoji} {item.title}
-              </li>
-            ))}
-          </ul>
+      </section>
+
+      <section className="section wins" aria-label="Recent wins">
+        <div className="section-head">
+          <h2>Recent wins</h2>
         </div>
+        <ul className="win-list">
+          {achievements.slice(0, 2).map((item) => (
+            <li key={item.id}>
+              <span aria-hidden>{item.emoji}</span>
+              <div>
+                <strong>{item.title}</strong>
+                <p>{item.detail}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );
@@ -138,9 +141,7 @@ function CoachPanel() {
   return (
     <div className="panel">
       <h1 className="panel-hero">AI Coach</h1>
-      <p className="panel-sub">
-        Personalized nudges based on your spending patterns and goals.
-      </p>
+      <p className="panel-sub">Small nudges from your spending patterns.</p>
       <div className="tip-list">
         {coachTips.map((tip) => (
           <article className="tip-item" key={tip}>
@@ -158,19 +159,17 @@ function AskPanel({ onSend }: { onSend: (q: string) => void }) {
   return (
     <div className="panel">
       <h1 className="panel-hero">Ask AI</h1>
-      <p className="panel-sub">
-        Ask about budgets, transfers, or how to reach your next savings milestone.
-      </p>
+      <p className="panel-sub">Budgets, transfers, or how to hit the next goal.</p>
       <div className="chat-list">
-        <article className="chat-bubble">
+        <article className="chat-bubble you">
           <span className="label">You</span>
-          <p>How can I fund my travel goal faster?</p>
+          <p>How do I fund travel faster?</p>
         </article>
         <article className="chat-bubble">
-          <span className="label">VibeSpend AI</span>
+          <span className="label">Coach</span>
           <p>
-            Trim dining by about $35/week and auto-transfer that to Travel Fund.
-            You&apos;d hit the goal roughly 3 weeks sooner.
+            Trim dining ~$35/week and auto-send it to Travel. That lands you about
+            three weeks sooner.
           </p>
         </article>
       </div>
@@ -186,7 +185,7 @@ function AskPanel({ onSend }: { onSend: (q: string) => void }) {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Ask a money question…"
+          placeholder="Ask anything about your money…"
           aria-label="Ask AI"
         />
         <button type="submit">Ask</button>
@@ -199,24 +198,19 @@ function AchievementsPanel() {
   return (
     <div className="panel">
       <h1 className="panel-hero">Achievements</h1>
-      <p className="panel-sub">Milestones that keep your money habits on track.</p>
+      <p className="panel-sub">Milestones from your money habits.</p>
       <div className="badge-grid">
         {achievements.map((item) => (
-          <article className="badge-card" key={item.id}>
-            <div className="badge-emoji">{item.emoji}</div>
+          <article className="badge-row" key={item.id}>
+            <div className="badge-emoji" aria-hidden>
+              {item.emoji}
+            </div>
             <div>
               <h3>{item.title}</h3>
-              <p>Unlocked this week</p>
+              <p>{item.detail}</p>
             </div>
           </article>
         ))}
-        <article className="badge-card">
-          <div className="badge-emoji">🌱</div>
-          <div>
-            <h3>Travel Streak</h3>
-            <p>42% funded — keep going</p>
-          </div>
-        </article>
       </div>
     </div>
   );
@@ -228,7 +222,7 @@ export default function App() {
   const [goalsReady, setGoalsReady] = useState(false);
 
   useEffect(() => {
-    const id = window.setTimeout(() => setGoalsReady(true), 180);
+    const id = window.setTimeout(() => setGoalsReady(true), 160);
     return () => window.clearTimeout(id);
   }, []);
 
@@ -246,10 +240,9 @@ export default function App() {
       return;
     }
     const labels: Record<string, string> = {
-      expense: "Expense form ready",
+      expense: "Ready to log an expense",
       transfer: "Transfer started",
-      goal: "New goal draft open",
-      report: "July report ready",
+      goal: "New goal draft ready",
     };
     showToast(labels[id] ?? "Done");
   };
@@ -257,7 +250,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <div className="phone" role="application" aria-label="VibeSpend finance app">
-        <StatusBar />
+        <div className="glow" aria-hidden />
         <main className="screen">
           {tab === "home" && (
             <HomeDashboard onAction={handleAction} goalsReady={goalsReady} />
@@ -286,7 +279,7 @@ export default function App() {
             onClick={() => setTab("coach")}
           >
             <AiIcon />
-            AI Coach
+            Coach
           </button>
           <button
             className={`nav-item${tab === "ask" ? " active" : ""}`}
@@ -300,7 +293,7 @@ export default function App() {
             onClick={() => setTab("achievements")}
           >
             <TrophyIcon />
-            Achievements
+            Wins
           </button>
         </nav>
       </div>

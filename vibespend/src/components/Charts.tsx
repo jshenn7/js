@@ -6,14 +6,12 @@ import {
   PieChart,
   ResponsiveContainer,
   XAxis,
-  YAxis,
 } from "recharts";
 import { budgetCategories, spendingTrend } from "../data";
 
 export function BudgetDonut() {
   return (
     <div className="chart-block">
-      <h3>Budget Distribution</h3>
       <div className="donut-wrap">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -21,11 +19,11 @@ export function BudgetDonut() {
               data={budgetCategories}
               dataKey="value"
               nameKey="name"
-              innerRadius="58%"
-              outerRadius="88%"
-              paddingAngle={3}
+              innerRadius="62%"
+              outerRadius="90%"
+              paddingAngle={2.5}
               stroke="none"
-              animationDuration={900}
+              animationDuration={850}
             >
               {budgetCategories.map((entry) => (
                 <Cell key={entry.name} fill={entry.color} />
@@ -34,41 +32,39 @@ export function BudgetDonut() {
           </PieChart>
         </ResponsiveContainer>
         <div className="donut-center">
-          <span>July</span>
+          <span>Spent</span>
           <strong>$2.4k</strong>
         </div>
       </div>
+      <ul className="legend">
+        {budgetCategories.map((c) => (
+          <li key={c.name}>
+            <i style={{ background: c.color }} />
+            {c.name}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
 export function SpendingBars() {
   return (
-    <div className="chart-block">
-      <h3>Monthly Spending Trend</h3>
+    <div className="chart-block bars-block">
       <div className="bars-wrap">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={spendingTrend} barSize={14}>
+          <BarChart data={spendingTrend} barSize={16}>
             <XAxis
               dataKey="month"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#7a949b", fontSize: 11, fontFamily: "Manrope" }}
+              tick={{ fill: "#6d858c", fontSize: 11, fontFamily: "Manrope" }}
             />
-            <YAxis
-              width={28}
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "#7a949b", fontSize: 10, fontFamily: "Manrope" }}
-              ticks={[0, 50, 100, 150]}
-              domain={[0, 150]}
-              tickFormatter={(v) => `$${v}`}
-            />
-            <Bar dataKey="amount" radius={[8, 8, 4, 4]} animationDuration={900}>
+            <Bar dataKey="amount" radius={[7, 7, 3, 3]} animationDuration={850}>
               {spendingTrend.map((entry, index) => (
                 <Cell
                   key={entry.month}
-                  fill={index === spendingTrend.length - 1 ? "#1f8a8a" : "#7ed0c5"}
+                  fill={index === spendingTrend.length - 1 ? "#1d6f78" : "#8fd0c4"}
                 />
               ))}
             </Bar>

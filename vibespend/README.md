@@ -1,6 +1,6 @@
 # VibeSpend
 
-A mobile-first personal finance and budgeting app inspired by a VibeSpend-style dashboard: budget charts, savings goals, quick actions, AI coach tips, and achievements.
+A mobile-first personal finance and budgeting app in the spirit of a soft teal/mint money dashboard: spending overview, savings goals, quick actions, AI coach tips, and achievements.
 
 ## Run locally
 

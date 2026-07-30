@@ -1,11 +1,11 @@
 export type TabId = "home" | "coach" | "ask" | "achievements";
 
 export const budgetCategories = [
-  { name: "Housing", value: 32, color: "#e86a5c" },
-  { name: "Food", value: 22, color: "#e8b84a" },
-  { name: "Transport", value: 14, color: "#8b6bb8" },
-  { name: "Fun", value: 18, color: "#3aa0d8" },
-  { name: "Savings", value: 14, color: "#3cb89a" },
+  { name: "Housing", value: 34, color: "#e07a5f" },
+  { name: "Food", value: 20, color: "#f2cc8f" },
+  { name: "Transit", value: 12, color: "#81b29a" },
+  { name: "Fun", value: 18, color: "#3d8ea5" },
+  { name: "Save", value: 16, color: "#2a9d8f" },
 ];
 
 export const spendingTrend = [
@@ -17,26 +17,26 @@ export const spendingTrend = [
 ];
 
 export const savingsGoals = [
-  { id: "emergency", name: "Emergency Fund", progress: 100, color: "#3cb89a" },
-  { id: "travel", name: "Travel Fund", progress: 42, color: "#3cb89a" },
-  { id: "laptop", name: "New Laptop", progress: 0, color: "#3cb89a" },
+  { id: "emergency", name: "Emergency Fund", progress: 100, target: "$3,000" },
+  { id: "travel", name: "Travel Fund", progress: 42, target: "$1,800" },
+  { id: "laptop", name: "New Laptop", progress: 8, target: "$1,200" },
 ];
 
 export const quickActions = [
-  { id: "expense", label: "Add Expense", color: "#3aa0d8", icon: "plus" as const },
-  { id: "transfer", label: "Transfer", color: "#3cb89a", icon: "transfer" as const },
-  { id: "goal", label: "New Goal", color: "#8b6bb8", icon: "trophy" as const },
-  { id: "report", label: "Report", color: "#c45c6a", icon: "chart" as const },
-  { id: "ask", label: "Ask AI", color: "#176b72", icon: "spark" as const },
+  { id: "expense", label: "Add", color: "#3d8ea5", icon: "plus" as const },
+  { id: "transfer", label: "Move", color: "#2a9d8f", icon: "transfer" as const },
+  { id: "goal", label: "Goal", color: "#e07a5f", icon: "trophy" as const },
+  { id: "ask", label: "Ask AI", color: "#1d4e56", icon: "spark" as const },
 ];
 
 export const achievements = [
-  { id: "budget-master", title: "Budget Master (5 weeks on track)", emoji: "🔥" },
-  { id: "emergency-starter", title: "Emergency Fund Starter", emoji: "🏅" },
+  { id: "budget-master", title: "Budget Master", detail: "5 weeks on track", emoji: "🔥" },
+  { id: "emergency-starter", title: "Safety Net", detail: "Emergency fund complete", emoji: "🏅" },
+  { id: "travel-streak", title: "Travel Streak", detail: "42% funded", emoji: "✈️" },
 ];
 
 export const coachTips = [
-  "Consider reducing dining out to hit your travel goal!",
-  "You're under budget on transport this month — nice work.",
-  "Move $40 from Fun into Travel Fund to stay on pace.",
+  "Cut dining out a bit this week and your travel goal stays in reach.",
+  "Transit is under budget — nice cushion for the laptop fund.",
+  "Try an auto-transfer of $40 into Travel every Friday.",
 ];
