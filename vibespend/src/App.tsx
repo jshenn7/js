@@ -7,6 +7,7 @@ import {
   HomeIcon,
   PlusIcon,
   ProfileIcon,
+  SettingsIcon,
   SparkIcon,
   TargetIcon,
   TransferIcon,
@@ -31,6 +32,21 @@ import {
 import "./App.css";
 
 const GOALS_STORAGE_KEY = "mintly.goals";
+const SETTINGS_STORAGE_KEY = "mintly.settings";
+
+type AppSettings = {
+  streakReminders: boolean;
+  friendActivity: boolean;
+  privateProfile: boolean;
+  weeklyDigest: boolean;
+};
+
+const defaultSettings: AppSettings = {
+  streakReminders: true,
+  friendActivity: true,
+  privateProfile: false,
+  weeklyDigest: true,
+};
 
 function loadGoals(): Goal[] {
   try {
@@ -41,6 +57,16 @@ function loadGoals(): Goal[] {
     return parsed;
   } catch {
     return savingsGoals;
+  }
+}
+
+function loadSettings(): AppSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!raw) return defaultSettings;
+    return { ...defaultSettings, ...(JSON.parse(raw) as Partial<AppSettings>) };
+  } catch {
+    return defaultSettings;
   }
 }
 
@@ -469,14 +495,98 @@ function CoachPanel({ onSend }: { onSend: (q: string) => void }) {
   );
 }
 
+function SettingsPanel({
+  settings,
+  onChange,
+  onBack,
+}: {
+  settings: AppSettings;
+  onChange: (next: AppSettings) => void;
+  onBack: () => void;
+}) {
+  const rows: { key: keyof AppSettings; label: string; detail: string }[] = [
+    {
+      key: "streakReminders",
+      label: "Streak reminders",
+      detail: "Daily nudge to check in",
+    },
+    {
+      key: "friendActivity",
+      label: "Friend activity",
+      detail: "Alerts when friends hit goals",
+    },
+    {
+      key: "privateProfile",
+      label: "Private profile",
+      detail: "Hide your stats from friends",
+    },
+    {
+      key: "weeklyDigest",
+      label: "Weekly digest",
+      detail: "Sunday summary of spending",
+    },
+  ];
+
+  return (
+    <div className="panel">
+      <div className="panel-top">
+        <div>
+          <h1 className="panel-hero">Settings</h1>
+          <p className="panel-sub">Notifications and privacy preferences.</p>
+        </div>
+        <button className="text-link" onClick={onBack}>
+          Done
+        </button>
+      </div>
+
+      <ul className="settings-list">
+        {rows.map((row) => (
+          <li key={row.key}>
+            <div>
+              <strong>{row.label}</strong>
+              <p>{row.detail}</p>
+            </div>
+            <button
+              type="button"
+              className={`toggle${settings[row.key] ? " on" : ""}`}
+              aria-pressed={settings[row.key]}
+              aria-label={row.label}
+              onClick={() => onChange({ ...settings, [row.key]: !settings[row.key] })}
+            >
+              <i />
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <p className="joined">Changes save automatically on this device.</p>
+    </div>
+  );
+}
+
 function ProfilePanel({
   cheers,
   onCheer,
+  settings,
+  onSettingsChange,
 }: {
   cheers: Record<string, number>;
   onCheer: (id: string) => void;
+  settings: AppSettings;
+  onSettingsChange: (next: AppSettings) => void;
 }) {
+  const [showSettings, setShowSettings] = useState(false);
   const xpPct = Math.round((profile.xp / profile.xpToNext) * 100);
+
+  if (showSettings) {
+    return (
+      <SettingsPanel
+        settings={settings}
+        onChange={onSettingsChange}
+        onBack={() => setShowSettings(false)}
+      />
+    );
+  }
 
   return (
     <div className="panel">
@@ -484,7 +594,7 @@ function ProfilePanel({
         <div className="profile-avatar" aria-hidden>
           AR
         </div>
-        <div>
+        <div className="profile-title">
           <h1 className="panel-hero" style={{ marginBottom: 2 }}>
             {profile.name}
           </h1>
@@ -492,6 +602,13 @@ function ProfilePanel({
             {profile.handle} · {profile.city}
           </p>
         </div>
+        <button
+          className="settings-btn"
+          aria-label="Open settings"
+          onClick={() => setShowSettings(true)}
+        >
+          <SettingsIcon size={20} />
+        </button>
       </header>
 
       <section className="profile-stats" aria-label="Profile stats">
@@ -608,6 +725,7 @@ export default function App() {
   const [cheers, setCheers] = useState<Record<string, number>>(() =>
     Object.fromEntries(communityFeed.map((f) => [f.id, f.cheers])),
   );
+  const [settings, setSettings] = useState<AppSettings>(loadSettings);
 
   useEffect(() => {
     const id = window.setTimeout(() => setGoalsReady(true), 160);
@@ -617,6 +735,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(goals));
   }, [goals]);
+
+  useEffect(() => {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  }, [settings]);
 
   useEffect(() => {
     if (!toast) return;
@@ -694,7 +816,12 @@ export default function App() {
             <CoachPanel onSend={(q) => showToast(`Asked: ${q.slice(0, 28)}…`)} />
           )}
           {tab === "profile" && (
-            <ProfilePanel cheers={cheers} onCheer={handleCheer} />
+            <ProfilePanel
+              cheers={cheers}
+              onCheer={handleCheer}
+              settings={settings}
+              onSettingsChange={setSettings}
+            />
           )}
         </main>
 
