@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { BudgetDonut, RevenueSpendingBars, SpendingBars } from "./components/Charts";
+import {
+  BudgetDonut,
+  RecentInsightsChart,
+  RevenueSpendingBars,
+  SpendingBars,
+} from "./components/Charts";
 import {
   AiIcon,
   ChartIcon,
@@ -118,6 +123,7 @@ function HomeDashboard({
   onCheckIn,
   onOpenGoals,
   onOpenCoach,
+  onOpenInsights,
   goals,
 }: {
   onAction: (id: string) => void;
@@ -125,6 +131,7 @@ function HomeDashboard({
   onCheckIn: () => void;
   onOpenGoals: () => void;
   onOpenCoach: () => void;
+  onOpenInsights: () => void;
   goals: Goal[];
 }) {
   return (
@@ -165,6 +172,16 @@ function HomeDashboard({
           );
         })}
       </div>
+
+      <section className="section" aria-label="Recent insights">
+        <div className="section-head">
+          <h2>Recent insights</h2>
+          <button className="text-link" onClick={onOpenInsights}>
+            Details
+          </button>
+        </div>
+        <RecentInsightsChart compact />
+      </section>
 
       <button className="coach" aria-label="AI coach tip" onClick={onOpenCoach}>
         <div className="ai-badge">AI</div>
@@ -356,6 +373,14 @@ function InsightsPanel() {
     <div className="panel">
       <h1 className="panel-hero">Insights</h1>
       <p className="panel-sub">Spending patterns, revenue, and money flows.</p>
+
+      <section className="section" aria-label="Recent insights">
+        <div className="section-head">
+          <h2>Recent insights</h2>
+          <span>last 7 days</span>
+        </div>
+        <RecentInsightsChart />
+      </section>
 
       <section className="section" aria-label="Spending overview">
         <div className="section-head">
@@ -798,6 +823,7 @@ export default function App() {
               onCheckIn={handleCheckIn}
               onOpenGoals={() => setTab("goals")}
               onOpenCoach={() => setTab("coach")}
+              onOpenInsights={() => setTab("insights")}
               goals={goals}
             />
           )}

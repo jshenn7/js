@@ -75,6 +75,17 @@ export const topIncome = [
   { name: "Refund · Marketplace", amount: 36, share: "1%" },
 ];
 
+/** Daily net saved over the last week — used for the short recent-insights graph. */
+export const recentInsights = [
+  { day: "Mon", saved: 42, spent: 68 },
+  { day: "Tue", saved: 55, spent: 51 },
+  { day: "Wed", saved: 28, spent: 74 },
+  { day: "Thu", saved: 61, spent: 49 },
+  { day: "Fri", saved: 38, spent: 82 },
+  { day: "Sat", saved: 72, spent: 40 },
+  { day: "Sun", saved: 48, spent: 45 },
+];
+
 export const savingsGoals: Goal[] = [
   {
     id: "emergency",

@@ -1,4 +1,6 @@
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -11,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { budgetCategories, revenueVsSpending, spendingTrend } from "../data";
+import { budgetCategories, recentInsights, revenueVsSpending, spendingTrend } from "../data";
 
 export function BudgetDonut() {
   return (
@@ -82,6 +84,92 @@ export function SpendingBars() {
 function moneyTick(value: number) {
   if (value >= 1000) return `$${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`;
   return `$${value}`;
+}
+
+export function RecentInsightsChart({ compact = false }: { compact?: boolean }) {
+  const weekSaved = recentInsights.reduce((sum, d) => sum + d.saved, 0);
+
+  return (
+    <div className={`recent-insights${compact ? " compact" : ""}`}>
+      <div className="recent-insights-meta">
+        <div>
+          <span>Saved this week</span>
+          <strong>${weekSaved}</strong>
+        </div>
+        <div className="recent-pill">↑ 12% vs last week</div>
+      </div>
+      <div className={`recent-wrap${compact ? " short" : ""}`}>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart
+            data={recentInsights}
+            margin={{ top: 6, right: 4, left: compact ? 0 : -18, bottom: 0 }}
+          >
+            <defs>
+              <linearGradient id="savedFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#2a9d8f" stopOpacity={0.45} />
+                <stop offset="100%" stopColor="#2a9d8f" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <XAxis
+              dataKey="day"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#6d858c", fontSize: 10, fontFamily: "Manrope" }}
+            />
+            {!compact && (
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                width={32}
+                tick={{ fill: "#6d858c", fontSize: 10, fontFamily: "Manrope" }}
+                tickFormatter={(v) => `$${v}`}
+              />
+            )}
+            <Tooltip
+              cursor={{ stroke: "rgba(22,52,60,0.15)", strokeWidth: 1 }}
+              formatter={(value, name) => [
+                `$${Number(value)}`,
+                name === "saved" ? "Saved" : "Spent",
+              ]}
+              labelStyle={{ fontWeight: 700, color: "#16343c" }}
+              contentStyle={{
+                borderRadius: 12,
+                border: "none",
+                boxShadow: "0 8px 20px rgba(22, 68, 78, 0.12)",
+                fontFamily: "Manrope, sans-serif",
+                fontSize: 12,
+              }}
+            />
+            <Area
+              type="monotone"
+              dataKey="saved"
+              stroke="#1f6f78"
+              strokeWidth={2.4}
+              fill="url(#savedFill)"
+              animationDuration={850}
+            />
+            <Area
+              type="monotone"
+              dataKey="spent"
+              stroke="#e07a5f"
+              strokeWidth={1.8}
+              fill="transparent"
+              strokeDasharray="4 3"
+              animationDuration={850}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+      <ul className="recent-legend" aria-hidden>
+        <li>
+          <i className="saved" /> Saved
+        </li>
+        <li>
+          <i className="spent" /> Spent
+        </li>
+      </ul>
+    </div>
+  );
 }
 
 export function RevenueSpendingBars() {
