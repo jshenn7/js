@@ -22,6 +22,8 @@ import {
   quickActions,
   savingsGoals,
   streak,
+  topIncome,
+  topSpending,
   type Goal,
   type TabId,
 } from "./data";
@@ -348,6 +350,63 @@ function InsightsPanel({ onSend }: { onSend: (q: string) => void }) {
           <span>last 5 months</span>
         </div>
         <RevenueSpendingBars />
+      </section>
+
+      <section className="section" aria-label="Top money flows">
+        <div className="section-head">
+          <h2>Where money moved</h2>
+          <span>this month</span>
+        </div>
+
+        <div className="flow-tables">
+          <div className="flow-table">
+            <h3>Spent the most on</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Destination</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topSpending.map((row, i) => (
+                  <tr key={row.name}>
+                    <td>{i + 1}</td>
+                    <td>{row.name}</td>
+                    <td>{formatMoney(row.amount)}</td>
+                    <td>{row.share}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flow-table">
+            <h3>Received the most from</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Source</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topIncome.map((row, i) => (
+                  <tr key={row.name}>
+                    <td>{i + 1}</td>
+                    <td>{row.name}</td>
+                    <td>{formatMoney(row.amount)}</td>
+                    <td>{row.share}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <section className="section" aria-label="Coach tips">

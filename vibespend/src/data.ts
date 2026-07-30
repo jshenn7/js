@@ -60,6 +60,21 @@ export const revenueVsSpending = [
   { month: "Oct", revenue: 4600, spending: 2840 },
 ];
 
+export const topSpending = [
+  { name: "Rent · Oak Street", amount: 1450, share: "51%" },
+  { name: "Groceries · FreshMart", amount: 312, share: "11%" },
+  { name: "Dining · local spots", amount: 248, share: "9%" },
+  { name: "Transit · Metro pass", amount: 96, share: "3%" },
+  { name: "Subscriptions", amount: 74, share: "3%" },
+];
+
+export const topIncome = [
+  { name: "Payroll · Northwind Co", amount: 3900, share: "85%" },
+  { name: "Freelance · design gig", amount: 420, share: "9%" },
+  { name: "Interest · HYSA", amount: 48, share: "1%" },
+  { name: "Refund · Marketplace", amount: 36, share: "1%" },
+];
+
 export const savingsGoals: Goal[] = [
   {
     id: "emergency",
