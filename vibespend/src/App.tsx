@@ -13,16 +13,33 @@ import {
 } from "./components/Icons";
 import {
   achievements,
+  buildGoal,
   coachTips,
   communityFeed,
+  formatMoney,
   leaderboard,
   profile,
   quickActions,
   savingsGoals,
   streak,
+  type Goal,
   type TabId,
 } from "./data";
 import "./App.css";
+
+const GOALS_STORAGE_KEY = "mintly.goals";
+
+function loadGoals(): Goal[] {
+  try {
+    const raw = localStorage.getItem(GOALS_STORAGE_KEY);
+    if (!raw) return savingsGoals;
+    const parsed = JSON.parse(raw) as Goal[];
+    if (!Array.isArray(parsed) || parsed.length === 0) return savingsGoals;
+    return parsed;
+  } catch {
+    return savingsGoals;
+  }
+}
 
 const actionIcons = {
   plus: PlusIcon,
@@ -71,11 +88,13 @@ function HomeDashboard({
   checkedIn,
   onCheckIn,
   onOpenGoals,
+  goals,
 }: {
   onAction: (id: string) => void;
   checkedIn: boolean;
   onCheckIn: () => void;
   onOpenGoals: () => void;
+  goals: Goal[];
 }) {
   return (
     <div className="panel home">
@@ -134,7 +153,7 @@ function HomeDashboard({
           </button>
         </div>
         <div className="goals">
-          {savingsGoals.slice(0, 2).map((goal) => (
+          {goals.slice(0, 2).map((goal) => (
             <div className="goal-row" key={goal.id}>
               <div className="goal-meta">
                 <span>{goal.name}</span>
@@ -158,12 +177,56 @@ function HomeDashboard({
 }
 
 function GoalsPanel({
+  goals,
   goalsReady,
-  onAddGoal,
+  drafting,
+  onStartDraft,
+  onCancelDraft,
+  onCreateGoal,
 }: {
+  goals: Goal[];
   goalsReady: boolean;
-  onAddGoal: () => void;
+  drafting: boolean;
+  onStartDraft: () => void;
+  onCancelDraft: () => void;
+  onCreateGoal: (goal: Goal) => void;
 }) {
+  const [name, setName] = useState("");
+  const [target, setTarget] = useState("");
+  const [saved, setSaved] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!drafting) {
+      setName("");
+      setTarget("");
+      setSaved("");
+      setError("");
+    }
+  }, [drafting]);
+
+  const submitDraft = (e: { preventDefault: () => void }) => {
+    e.preventDefault();
+    const trimmed = name.trim();
+    const targetAmount = Number(target);
+    const savedAmount = saved.trim() === "" ? 0 : Number(saved);
+
+    if (!trimmed) {
+      setError("Give your goal a name.");
+      return;
+    }
+    if (!Number.isFinite(targetAmount) || targetAmount <= 0) {
+      setError("Enter a target amount greater than 0.");
+      return;
+    }
+    if (!Number.isFinite(savedAmount) || savedAmount < 0) {
+      setError("Saved amount can’t be negative.");
+      return;
+    }
+
+    onCreateGoal(buildGoal(trimmed, targetAmount, savedAmount));
+  };
+
   return (
     <div className="panel">
       <div className="panel-top">
@@ -171,13 +234,59 @@ function GoalsPanel({
           <h1 className="panel-hero">Goals</h1>
           <p className="panel-sub">Track what you&apos;re saving toward.</p>
         </div>
-        <button className="checkin-btn" onClick={onAddGoal}>
-          New
-        </button>
+        {!drafting && (
+          <button className="checkin-btn" onClick={onStartDraft}>
+            New
+          </button>
+        )}
       </div>
 
+      {drafting && (
+        <form className="goal-draft" onSubmit={submitDraft}>
+          <div className="section-head">
+            <h2>New goal draft</h2>
+            <button type="button" className="text-link" onClick={onCancelDraft}>
+              Cancel
+            </button>
+          </div>
+          <label>
+            Goal name
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Weekend trip"
+              autoFocus
+            />
+          </label>
+          <label>
+            Target amount
+            <input
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              inputMode="decimal"
+              placeholder="1500"
+            />
+          </label>
+          <label>
+            Already saved <span>(optional)</span>
+            <input
+              value={saved}
+              onChange={(e) => setSaved(e.target.value)}
+              inputMode="decimal"
+              placeholder="0"
+            />
+          </label>
+          {error && <p className="draft-error">{error}</p>}
+          <div className="draft-actions">
+            <button type="submit" className="draft-save">
+              Save goal
+            </button>
+          </div>
+        </form>
+      )}
+
       <div className="goals goals-full">
-        {savingsGoals.map((goal) => (
+        {goals.map((goal) => (
           <article className="goal-block" key={goal.id}>
             <div className="goal-meta">
               <span>{goal.name}</span>
@@ -200,7 +309,9 @@ function GoalsPanel({
             <p className="goal-note">
               {goal.progress >= 100
                 ? "Complete — nice work."
-                : `Keep going to reach ${goal.target}.`}
+                : `${formatMoney(goal.savedAmount)} saved · ${formatMoney(
+                    goal.targetAmount - goal.savedAmount,
+                  )} to go`}
             </p>
           </article>
         ))}
@@ -398,6 +509,8 @@ export default function App() {
   const [tab, setTab] = useState<TabId>("home");
   const [toast, setToast] = useState("");
   const [goalsReady, setGoalsReady] = useState(false);
+  const [goals, setGoals] = useState<Goal[]>(loadGoals);
+  const [drafting, setDrafting] = useState(false);
   const [checkedIn, setCheckedIn] = useState(streak.checkedInToday);
   const [cheers, setCheers] = useState<Record<string, number>>(() =>
     Object.fromEntries(communityFeed.map((f) => [f.id, f.cheers])),
@@ -409,6 +522,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(goals));
+  }, [goals]);
+
+  useEffect(() => {
     if (!toast) return;
     const id = window.setTimeout(() => setToast(""), 1800);
     return () => window.clearTimeout(id);
@@ -416,14 +533,18 @@ export default function App() {
 
   const showToast = (message: string) => setToast(message);
 
+  const openGoalDraft = () => {
+    setTab("goals");
+    setDrafting(true);
+  };
+
   const handleAction = (id: string) => {
     if (id === "ask") {
       setTab("insights");
       return;
     }
     if (id === "goal") {
-      setTab("goals");
-      showToast("New goal draft ready");
+      openGoalDraft();
       return;
     }
     const labels: Record<string, string> = {
@@ -444,6 +565,12 @@ export default function App() {
     showToast("Cheered your friend!");
   };
 
+  const handleCreateGoal = (goal: Goal) => {
+    setGoals((prev) => [goal, ...prev]);
+    setDrafting(false);
+    showToast(`Goal “${goal.name}” saved`);
+  };
+
   return (
     <div className="app-shell">
       <div className="phone" role="application" aria-label="Mintly finance app">
@@ -455,12 +582,17 @@ export default function App() {
               checkedIn={checkedIn}
               onCheckIn={handleCheckIn}
               onOpenGoals={() => setTab("goals")}
+              goals={goals}
             />
           )}
           {tab === "goals" && (
             <GoalsPanel
+              goals={goals}
               goalsReady={goalsReady}
-              onAddGoal={() => showToast("New goal draft ready")}
+              drafting={drafting}
+              onStartDraft={() => setDrafting(true)}
+              onCancelDraft={() => setDrafting(false)}
+              onCreateGoal={handleCreateGoal}
             />
           )}
           {tab === "insights" && (

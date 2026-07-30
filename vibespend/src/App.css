@@ -401,6 +401,66 @@
   color: var(--ink-muted);
 }
 
+.goal-draft {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(22, 52, 60, 0.06);
+  animation: rise 0.35s ease both;
+}
+
+.goal-draft label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.goal-draft label span {
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.goal-draft input {
+  border: none;
+  border-radius: 12px;
+  padding: 11px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 0 0 1px rgba(22, 52, 60, 0.08);
+  outline: none;
+}
+
+.goal-draft input:focus {
+  box-shadow: inset 0 0 0 1.5px rgba(29, 111, 120, 0.45);
+}
+
+.draft-error {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #c45c2a;
+}
+
+.draft-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.draft-save {
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: var(--teal-deep);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
 .panel-top {
   display: flex;
   justify-content: space-between;

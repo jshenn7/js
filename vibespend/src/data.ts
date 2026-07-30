@@ -1,5 +1,14 @@
 export type TabId = "home" | "goals" | "insights" | "profile";
 
+export type Goal = {
+  id: string;
+  name: string;
+  progress: number;
+  target: string;
+  targetAmount: number;
+  savedAmount: number;
+};
+
 export const profile = {
   name: "Alex Rivera",
   handle: "@alexr",
@@ -43,11 +52,54 @@ export const spendingTrend = [
   { month: "Oct", amount: 88 },
 ];
 
-export const savingsGoals = [
-  { id: "emergency", name: "Emergency Fund", progress: 100, target: "$3,000" },
-  { id: "travel", name: "Travel Fund", progress: 42, target: "$1,800" },
-  { id: "laptop", name: "New Laptop", progress: 8, target: "$1,200" },
+export const savingsGoals: Goal[] = [
+  {
+    id: "emergency",
+    name: "Emergency Fund",
+    progress: 100,
+    target: "$3,000",
+    targetAmount: 3000,
+    savedAmount: 3000,
+  },
+  {
+    id: "travel",
+    name: "Travel Fund",
+    progress: 42,
+    target: "$1,800",
+    targetAmount: 1800,
+    savedAmount: 756,
+  },
+  {
+    id: "laptop",
+    name: "New Laptop",
+    progress: 8,
+    target: "$1,200",
+    targetAmount: 1200,
+    savedAmount: 96,
+  },
 ];
+
+export function formatMoney(amount: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+export function buildGoal(name: string, targetAmount: number, savedAmount = 0): Goal {
+  const safeTarget = Math.max(1, Math.round(targetAmount));
+  const safeSaved = Math.max(0, Math.min(safeTarget, Math.round(savedAmount)));
+  const progress = Math.round((safeSaved / safeTarget) * 100);
+  return {
+    id: `goal-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    name: name.trim(),
+    progress,
+    target: formatMoney(safeTarget),
+    targetAmount: safeTarget,
+    savedAmount: safeSaved,
+  };
+}
 
 export const quickActions = [
   { id: "expense", label: "Add", color: "#3d8ea5", icon: "plus" as const },
