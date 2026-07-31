@@ -89,6 +89,8 @@ export function BudgetDonut() {
               contentStyle={{
                 borderRadius: 12,
                 border: "none",
+                background: "var(--surface)",
+                color: "var(--ink)",
                 boxShadow: "0 8px 20px rgba(22, 68, 78, 0.12)",
                 fontFamily: "Manrope, sans-serif",
                 fontSize: 12,
@@ -146,7 +148,7 @@ export function SpendingBars() {
               dataKey="month"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#6d858c", fontSize: 11, fontFamily: "Manrope" }}
+              tick={{ fill: "var(--chart-tick)", fontSize: 11, fontFamily: "Manrope" }}
             />
             <Bar dataKey="amount" radius={[7, 7, 3, 3]} animationDuration={850}>
               {spendingTrend.map((entry, index) => (
@@ -196,14 +198,14 @@ export function RecentInsightsChart({ compact = false }: { compact?: boolean }) 
               dataKey="day"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#6d858c", fontSize: 10, fontFamily: "Manrope" }}
+              tick={{ fill: "var(--chart-tick)", fontSize: 10, fontFamily: "Manrope" }}
             />
             {!compact && (
               <YAxis
                 axisLine={false}
                 tickLine={false}
                 width={32}
-                tick={{ fill: "#6d858c", fontSize: 10, fontFamily: "Manrope" }}
+                tick={{ fill: "var(--chart-tick)", fontSize: 10, fontFamily: "Manrope" }}
                 tickFormatter={(v) => `$${v}`}
               />
             )}
@@ -213,10 +215,12 @@ export function RecentInsightsChart({ compact = false }: { compact?: boolean }) 
                 `$${Number(value)}`,
                 name === "saved" ? "Saved" : "Spent",
               ]}
-              labelStyle={{ fontWeight: 700, color: "#16343c" }}
+              labelStyle={{ fontWeight: 700, color: "var(--ink)" }}
               contentStyle={{
                 borderRadius: 12,
                 border: "none",
+                background: "var(--surface)",
+                color: "var(--ink)",
                 boxShadow: "0 8px 20px rgba(22, 68, 78, 0.12)",
                 fontFamily: "Manrope, sans-serif",
                 fontSize: 12,
@@ -287,14 +291,14 @@ export function RevenueSpendingBars() {
               dataKey="month"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#6d858c", fontSize: 11, fontFamily: "Manrope" }}
+              tick={{ fill: "var(--chart-tick)", fontSize: 11, fontFamily: "Manrope" }}
             />
             <YAxis
               axisLine={false}
               tickLine={false}
               width={40}
               tickFormatter={moneyTick}
-              tick={{ fill: "#6d858c", fontSize: 10, fontFamily: "Manrope" }}
+              tick={{ fill: "var(--chart-tick)", fontSize: 10, fontFamily: "Manrope" }}
             />
             <Tooltip
               cursor={{ fill: "rgba(255,255,255,0.35)" }}
@@ -302,10 +306,12 @@ export function RevenueSpendingBars() {
                 `$${Number(value).toLocaleString("en-US")}`,
                 String(name),
               ]}
-              labelStyle={{ fontWeight: 700, color: "#16343c" }}
+              labelStyle={{ fontWeight: 700, color: "var(--ink)" }}
               contentStyle={{
                 borderRadius: 12,
                 border: "none",
+                background: "var(--surface)",
+                color: "var(--ink)",
                 boxShadow: "0 8px 20px rgba(22, 68, 78, 0.12)",
                 fontFamily: "Manrope, sans-serif",
                 fontSize: 12,

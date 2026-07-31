@@ -42,6 +42,7 @@ const GOALS_STORAGE_KEY = "mintly.goals";
 const SETTINGS_STORAGE_KEY = "mintly.settings";
 
 type AppSettings = {
+  darkMode: boolean;
   streakReminders: boolean;
   friendActivity: boolean;
   privateProfile: boolean;
@@ -49,6 +50,7 @@ type AppSettings = {
 };
 
 const defaultSettings: AppSettings = {
+  darkMode: false,
   streakReminders: true,
   friendActivity: true,
   privateProfile: false,
@@ -594,6 +596,11 @@ function SettingsPanel({
 }) {
   const rows: { key: keyof AppSettings; label: string; detail: string }[] = [
     {
+      key: "darkMode",
+      label: "Dark mode",
+      detail: "Use a darker look across Mintly",
+    },
+    {
       key: "streakReminders",
       label: "Streak reminders",
       detail: "Daily nudge to check in",
@@ -620,7 +627,7 @@ function SettingsPanel({
       <div className="panel-top">
         <div>
           <h1 className="panel-hero">Settings</h1>
-          <p className="panel-sub">Notifications and privacy preferences.</p>
+          <p className="panel-sub">Appearance, notifications, and privacy.</p>
         </div>
         <button className="text-link" onClick={onBack}>
           Done
@@ -829,6 +836,11 @@ export default function App() {
   }, [settings]);
 
   useEffect(() => {
+    document.documentElement.classList.toggle("dark", settings.darkMode);
+    return () => document.documentElement.classList.remove("dark");
+  }, [settings.darkMode]);
+
+  useEffect(() => {
     if (!toast) return;
     const id = window.setTimeout(() => setToast(""), 1800);
     return () => window.clearTimeout(id);
@@ -876,7 +888,11 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <div className="phone" role="application" aria-label="Mintly finance app">
+      <div
+        className={`phone${settings.darkMode ? " dark" : ""}`}
+        role="application"
+        aria-label="Mintly finance app"
+      >
         <div className="glow" aria-hidden />
         <main className="screen">
           {tab === "home" && (
