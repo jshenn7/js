@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { AppNav } from "@/components/AppNav";
+import { LogoutButton } from "@/components/LogoutButton";
 import { GoalPointsCard, ShopShell } from "@/components/ShopShell";
 import { user } from "@/lib/data";
 
@@ -16,13 +17,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </span>
               FinGo
             </Link>
-            <div className="flex items-center gap-3 text-sm">
+            <div className="flex items-center gap-2 text-sm sm:gap-3">
               <span className="rounded-full bg-sun-soft px-3 py-1 font-bold text-[#8a6a00]">
                 🔥 {user.streak} day streak
               </span>
               <span className="hidden rounded-full bg-primary-soft px-3 py-1 font-bold text-primary-deep sm:inline">
                 Lv {user.level}
               </span>
+              <LogoutButton />
             </div>
           </div>
         </header>

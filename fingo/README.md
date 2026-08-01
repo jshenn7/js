@@ -19,10 +19,14 @@ FinGo is a gamified personal finance app — streaks, collaborative goals, and a
 ```bash
 cd fingo
 npm install
-npm run dev
+npm run build
+npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). You’ll be prompted to log in first.
+
+**Demo account:** `alex@fingo.app` / `streak123` (or tap “Continue with demo account”).  
+Any email + password (6+ characters) also works for this prototype.
 
 ## Scripts
 
