@@ -120,13 +120,6 @@ export const contributions = [
   { id: "c4", user: "Alex", action: "leveled up to Level 12", time: "Yesterday", cheer: 12 },
 ];
 
-export const shopItems = [
-  { id: "s1", name: "Leaf Badge", cost: 120, type: "Badge", owned: true },
-  { id: "s2", name: "Coin Fox Pet", cost: 480, type: "Pet", owned: false },
-  { id: "s3", name: "Sunrise Theme", cost: 320, type: "Theme", owned: false },
-  { id: "s4", name: "Streak Flame", cost: 200, type: "Badge", owned: false },
-];
-
 export const insights = [
   {
     id: "i1",

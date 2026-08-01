@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 export function ProgressBar({
   value,
@@ -67,13 +67,16 @@ export function SectionHeader({
 export function Panel({
   children,
   className = "",
+  style,
 }: {
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
 }) {
   return (
     <section
       className={`rounded-[1.25rem] border border-white/70 bg-surface/90 p-5 shadow-soft backdrop-blur-sm ${className}`}
+      style={style}
     >
       {children}
     </section>

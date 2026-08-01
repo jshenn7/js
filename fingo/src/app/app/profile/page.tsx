@@ -1,36 +1,112 @@
 "use client";
 
-import { useState } from "react";
-import { ShoppingBag, Trophy } from "lucide-react";
-import { Avatar, Panel, ProgressBar, SectionHeader } from "@/components/ui";
-import { contributions, formatMoney, shopItems, user } from "@/lib/data";
+import { useMemo, useState } from "react";
+import { Check, ShoppingBag, Sparkles } from "lucide-react";
+import { Panel, ProgressBar, SectionHeader } from "@/components/ui";
+import { contributions, formatMoney, user } from "@/lib/data";
+import { useShop } from "@/lib/shop-store";
+import type { ShopItem, ShopItemType } from "@/lib/shop";
+
+const filters: Array<"All" | ShopItemType> = ["All", "Badge", "Pet", "Theme"];
 
 export default function ProfilePage() {
-  const [points, setPoints] = useState(user.goalPoints);
-  const [owned, setOwned] = useState(
-    new Set(shopItems.filter((i) => i.owned).map((i) => i.id)),
+  const {
+    points,
+    catalog,
+    buy,
+    equip,
+    unequip,
+    isOwned,
+    isEquipped,
+    equippedItems,
+  } = useShop();
+  const [filter, setFilter] = useState<(typeof filters)[number]>("All");
+  const [toast, setToast] = useState<string | null>(null);
+
+  const visibleItems = useMemo(
+    () => (filter === "All" ? catalog : catalog.filter((item) => item.type === filter)),
+    [catalog, filter],
   );
 
-  function buy(id: string, cost: number) {
-    if (owned.has(id) || points < cost) return;
-    setPoints((p) => p - cost);
-    setOwned((prev) => new Set(prev).add(id));
+  function flash(message: string) {
+    setToast(message);
+    window.setTimeout(() => setToast(null), 2200);
   }
+
+  function onBuy(item: ShopItem) {
+    const result = buy(item.id);
+    flash(result.message);
+  }
+
+  function onEquipToggle(item: ShopItem) {
+    if (isEquipped(item.id)) {
+      unequip(item.type);
+      flash(`Unequipped ${item.name}.`);
+      return;
+    }
+    const result = equip(item.id);
+    flash(result.message);
+  }
+
+  const themeStyle = equippedItems.theme?.theme
+    ? {
+        background: equippedItems.theme.theme.panel,
+        borderColor: "transparent",
+      }
+    : undefined;
 
   return (
     <div className="space-y-5">
-      <div className="animate-rise">
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
-          Profile & Community
-        </h1>
-        <p className="mt-1 text-sm text-muted">The Identity — your level, streak, and crew</p>
+      <div className="animate-rise flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
+            Profile & Community
+          </h1>
+          <p className="mt-1 text-sm text-muted">The Identity — your level, streak, and crew</p>
+        </div>
+        {toast ? (
+          <div
+            className="animate-streak rounded-2xl bg-ink px-4 py-2 text-sm font-semibold text-white shadow-lift"
+            role="status"
+          >
+            {toast}
+          </div>
+        ) : null}
       </div>
 
-      <Panel className="animate-rise-delay-1">
+      <Panel className="animate-rise-delay-1 transition-colors" style={themeStyle}>
         <div className="flex flex-wrap items-center gap-4">
-          <Avatar initials={user.avatarInitials} size="lg" />
+          <div className="relative">
+            <div className="grid h-16 w-16 place-items-center rounded-full bg-primary text-xl font-extrabold text-white shadow-soft">
+              {user.avatarInitials}
+            </div>
+            {equippedItems.badge ? (
+              <span
+                className="absolute -right-1 -top-1 grid h-7 w-7 place-items-center rounded-full bg-surface text-sm shadow-soft ring-2 ring-primary/20"
+                title={equippedItems.badge.name}
+              >
+                {equippedItems.badge.glyph}
+              </span>
+            ) : null}
+            {equippedItems.pet ? (
+              <span
+                className="absolute -bottom-1 -left-1 grid h-8 w-8 place-items-center rounded-full bg-sun-soft text-base shadow-soft ring-2 ring-white"
+                title={equippedItems.pet.name}
+              >
+                {equippedItems.pet.glyph}
+              </span>
+            ) : null}
+          </div>
+
           <div className="min-w-0 flex-1">
-            <h2 className="text-2xl font-extrabold text-ink">{user.name}</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-2xl font-extrabold text-ink">{user.name}</h2>
+              {equippedItems.badge ? (
+                <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary-deep">
+                  {equippedItems.badge.glyph} {equippedItems.badge.name}
+                </span>
+              ) : null}
+            </div>
             <p className="text-sm text-muted">{user.handle}</p>
             <div className="mt-3">
               <div className="mb-1 flex justify-between text-sm font-semibold">
@@ -39,7 +115,11 @@ export default function ProfilePage() {
                   {user.xp}/{user.xpToNext} XP
                 </span>
               </div>
-              <ProgressBar value={user.xp} max={user.xpToNext} />
+              <ProgressBar
+                value={user.xp}
+                max={user.xpToNext}
+                color={equippedItems.theme?.theme?.accent}
+              />
             </div>
           </div>
         </div>
@@ -49,55 +129,132 @@ export default function ProfilePage() {
           <Stat label="Streak" value={`${user.streak}d`} tone="accent" />
           <Stat label="Points" value={points.toLocaleString()} tone="sun" />
         </div>
+
+        <div className="mt-4 flex flex-wrap gap-2 text-sm">
+          <LoadoutChip
+            label="Badge"
+            value={equippedItems.badge?.name ?? "None"}
+            glyph={equippedItems.badge?.glyph}
+          />
+          <LoadoutChip
+            label="Pet"
+            value={equippedItems.pet?.name ?? "None"}
+            glyph={equippedItems.pet?.glyph}
+          />
+          <LoadoutChip
+            label="Theme"
+            value={equippedItems.theme?.name ?? "Default"}
+            glyph={equippedItems.theme?.glyph}
+          />
+        </div>
       </Panel>
 
       <Panel className="animate-rise-delay-2">
         <SectionHeader
           title="Avatar Shop"
-          subtitle="Spend Goal Points on badges, pets, and themes"
+          subtitle="Buy cosmetics with Goal Points, then equip them on your profile"
           action={
-            <span className="inline-flex items-center gap-1 text-sm font-bold text-primary-deep">
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-3 py-1 text-sm font-bold text-primary-deep">
               <ShoppingBag className="h-4 w-4" />
               {points.toLocaleString()} pts
             </span>
           }
         />
+
+        <div className="mb-4 flex flex-wrap gap-2">
+          {filters.map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setFilter(item)}
+              className={`tactile rounded-full px-3 py-1.5 text-xs font-bold ${
+                filter === item
+                  ? "bg-ink text-white"
+                  : "bg-bg text-ink-soft ring-1 ring-line"
+              }`}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2">
-          {shopItems.map((item) => {
-            const isOwned = owned.has(item.id);
-            const canBuy = !isOwned && points >= item.cost;
+          {visibleItems.map((item) => {
+            const owned = isOwned(item.id);
+            const equipped = isEquipped(item.id);
+            const canBuy = !owned && points >= item.cost;
             return (
-              <div
+              <article
                 key={item.id}
-                className="rounded-2xl border border-line bg-bg/50 p-4"
+                className={`rounded-2xl border p-4 transition-colors ${
+                  equipped
+                    ? "border-primary bg-primary-soft/40"
+                    : "border-line bg-bg/50"
+                }`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-bold text-ink">{item.name}</p>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted">
-                      {item.type}
+                <div className="flex items-start gap-3">
+                  <div
+                    className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface text-2xl shadow-soft"
+                    aria-hidden
+                  >
+                    {item.glyph}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-bold text-ink">{item.name}</p>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted">
+                          {item.type}
+                        </p>
+                      </div>
+                      {equipped ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                          <Check className="h-3 w-3" />
+                          Equipped
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+                      {item.description}
                     </p>
                   </div>
-                  <Trophy className="h-4 w-4 text-sun" />
                 </div>
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-sm font-bold text-ink-soft">{item.cost} pts</span>
-                  <button
-                    type="button"
-                    disabled={!canBuy && !isOwned}
-                    onClick={() => buy(item.id, item.cost)}
-                    className={`tactile rounded-xl px-3 py-2 text-xs font-bold ${
-                      isOwned
-                        ? "bg-primary-soft text-primary-deep"
-                        : canBuy
-                          ? "bg-primary text-white"
-                          : "cursor-not-allowed bg-line text-muted"
-                    }`}
-                  >
-                    {isOwned ? "Owned" : "Buy"}
-                  </button>
+
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm font-bold text-ink-soft">
+                    {owned ? "Owned" : `${item.cost} pts`}
+                  </span>
+                  <div className="flex gap-2">
+                    {owned ? (
+                      <button
+                        type="button"
+                        onClick={() => onEquipToggle(item)}
+                        className={`tactile rounded-xl px-3 py-2 text-xs font-bold ${
+                          equipped
+                            ? "bg-surface text-ink ring-1 ring-line"
+                            : "bg-primary text-white"
+                        }`}
+                      >
+                        {equipped ? "Unequip" : "Equip"}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={!canBuy}
+                        onClick={() => onBuy(item)}
+                        className={`tactile inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-bold ${
+                          canBuy
+                            ? "bg-primary text-white"
+                            : "cursor-not-allowed bg-line text-muted"
+                        }`}
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        {canBuy ? "Buy & equip" : "Not enough pts"}
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
@@ -147,5 +304,25 @@ function Stat({
       <p className="text-xs font-semibold uppercase tracking-wider opacity-80">{label}</p>
       <p className="mt-1 text-xl font-extrabold">{value}</p>
     </div>
+  );
+}
+
+function LoadoutChip({
+  label,
+  value,
+  glyph,
+}: {
+  label: string;
+  value: string;
+  glyph?: string;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/80 px-3 py-1.5 font-semibold text-ink ring-1 ring-line">
+      <span className="text-muted">{label}:</span>
+      <span>
+        {glyph ? `${glyph} ` : ""}
+        {value}
+      </span>
+    </span>
   );
 }
