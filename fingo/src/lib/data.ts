@@ -26,9 +26,12 @@ export const momentum = [
 ];
 
 export const categories = [
-  { id: "food", name: "Food", spent: 420, budget: 550, color: "#0d8a5b" },
   { id: "housing", name: "Housing", spent: 1450, budget: 1500, color: "#3aa8d8" },
+  { id: "food", name: "Food", spent: 420, budget: 550, color: "#0d8a5b" },
+  { id: "transport", name: "Transport", spent: 260, budget: 320, color: "#f5b800" },
+  { id: "subscriptions", name: "Subscriptions", spent: 77, budget: 100, color: "#e85d75" },
   { id: "leisure", name: "Leisure", spent: 210, budget: 300, color: "#ff6a3d" },
+  { id: "health", name: "Health", spent: 95, budget: 150, color: "#2bb673" },
 ];
 
 export const bills = [

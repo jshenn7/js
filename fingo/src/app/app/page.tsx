@@ -1,9 +1,12 @@
 import { Sparkles } from "lucide-react";
 import { MomentumChart } from "@/components/MomentumChart";
+import { SpendingPieChart } from "@/components/SpendingPieChart";
 import { Panel, ProgressBar, SectionHeader } from "@/components/ui";
 import { categories, formatMoney, tipOfDay, user } from "@/lib/data";
 
 export default function HomeDashboard() {
+  const topSpend = [...categories].sort((a, b) => b.spent - a.spent)[0];
+
   return (
     <div className="space-y-5">
       <div className="animate-rise">
@@ -31,6 +34,14 @@ export default function HomeDashboard() {
 
       <Panel className="animate-rise-delay-2">
         <SectionHeader
+          title="Where your money went"
+          subtitle={`This month’s top spend is ${topSpend.name} at ${formatMoney(topSpend.spent)}`}
+        />
+        <SpendingPieChart />
+      </Panel>
+
+      <Panel className="animate-rise-delay-3">
+        <SectionHeader
           title="Momentum Tracker"
           subtitle="Income vs spending over the last five months"
           action={
@@ -49,8 +60,8 @@ export default function HomeDashboard() {
 
       <Panel className="animate-rise-delay-3">
         <SectionHeader
-          title="Category Breakdown"
-          subtitle="Food, Housing, and Leisure budgets this month"
+          title="Category budgets"
+          subtitle="Track progress against this month’s limits"
         />
         <div className="space-y-5">
           {categories.map((cat) => {
