@@ -28,6 +28,19 @@ Open [http://localhost:3000](http://localhost:3000). You’ll be prompted to log
 **Demo account:** `alex@fingo.app` / `streak123` (or tap “Continue with demo account”).  
 Any email + password (6+ characters) also works for this prototype.
 
+## AI Coach
+
+The coach is a real LLM grounded in your FinGo snapshot (budgets, bills, goals).
+
+**Default (local):** [Ollama](https://ollama.com) with `llama3.2:3b`
+
+```bash
+ollama serve
+ollama pull llama3.2:3b
+```
+
+**Optional cloud providers:** set `OPENAI_API_KEY` or `GROQ_API_KEY` (see `.env.example`).
+
 ## Scripts
 
 - `npm run dev` — local development

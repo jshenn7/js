@@ -147,16 +147,6 @@ export const coachStarters = [
   "Help me set a weekly grocery budget",
 ];
 
-export const coachReplies: Record<string, string> = {
-  default:
-    "Looking at your last 30 days, you have about $185 of flexible spend left in Leisure and Food. If you park $40/week into Vacation Fund, you’ll clear the goal before Sep 15 and earn ~120 Goal Points.",
-  save: "Great target. Trim $25 from dining out and $15 from delivery apps each week — that lands you at $200 by month-end without touching Housing.",
-  subscription:
-    "Spotify and Gym overlap with free campus perks you’ve used twice. Pausing Spotify for 2 months saves ~$24 and keeps Netflix for shared movie nights.",
-  grocery:
-    "Set $95/week for groceries. Batch-cook two dinners and you’ll stay under Food’s remaining $130 while keeping your streak alive.",
-};
-
 export function formatMoney(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
