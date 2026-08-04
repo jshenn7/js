@@ -1,19 +1,36 @@
-import { Sparkles } from "lucide-react";
+"use client";
+
+import Link from "next/link";
+import { Camera, Sparkles } from "lucide-react";
 import { MomentumChart } from "@/components/MomentumChart";
 import { SpendingPieChart } from "@/components/SpendingPieChart";
 import { Panel, ProgressBar, SectionHeader } from "@/components/ui";
-import { categories, formatMoney, tipOfDay, user } from "@/lib/data";
+import { formatMoney, tipOfDay, user } from "@/lib/data";
+import { useSpending } from "@/lib/spending-store";
 
 export default function HomeDashboard() {
+  const { categories, transactions } = useSpending();
   const topSpend = [...categories].sort((a, b) => b.spent - a.spent)[0];
+  const latestReceipt = transactions[0];
 
   return (
     <div className="space-y-5">
-      <div className="animate-rise">
-        <p className="text-sm font-semibold text-muted">Good afternoon, {user.name.split(" ")[0]}</p>
-        <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
-          Your Hub
-        </h1>
+      <div className="animate-rise flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-muted">
+            Good afternoon, {user.name.split(" ")[0]}
+          </p>
+          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
+            Your Hub
+          </h1>
+        </div>
+        <Link
+          href="/app/scan"
+          className="tactile inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-soft"
+        >
+          <Camera className="h-4 w-4" />
+          Scan receipt
+        </Link>
       </div>
 
       <Panel className="animate-rise-delay-1 relative overflow-hidden border-none bg-gradient-to-br from-primary to-sky text-white">
@@ -25,10 +42,18 @@ export default function HomeDashboard() {
               {tipOfDay.title}
             </div>
             <p className="text-lg font-semibold leading-snug md:text-xl">{tipOfDay.body}</p>
+            {latestReceipt ? (
+              <p className="mt-3 text-sm text-white/85">
+                Latest scan: {latestReceipt.merchant} · {formatMoney(latestReceipt.amount)}
+              </p>
+            ) : null}
           </div>
-          <button className="tactile shrink-0 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-primary-deep shadow-soft">
-            {tipOfDay.cta}
-          </button>
+          <Link
+            href="/app/scan"
+            className="tactile shrink-0 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-primary-deep shadow-soft"
+          >
+            Add from photo
+          </Link>
         </div>
       </Panel>
 
@@ -37,7 +62,7 @@ export default function HomeDashboard() {
           title="Where your money went"
           subtitle={`This month’s top spend is ${topSpend.name} at ${formatMoney(topSpend.spent)}`}
         />
-        <SpendingPieChart />
+        <SpendingPieChart categories={categories} />
       </Panel>
 
       <Panel className="animate-rise-delay-3">
@@ -61,7 +86,7 @@ export default function HomeDashboard() {
       <Panel className="animate-rise-delay-3">
         <SectionHeader
           title="Category budgets"
-          subtitle="Track progress against this month’s limits"
+          subtitle="Updates instantly when you scan a receipt"
         />
         <div className="space-y-5">
           {categories.map((cat) => {

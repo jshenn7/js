@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { categories, formatMoney } from "@/lib/data";
+import { formatMoney } from "@/lib/data";
+import type { SpendingCategory } from "@/lib/spending";
 
 type Slice = {
   id: string;
@@ -12,7 +13,7 @@ type Slice = {
   percent: number;
 };
 
-export function SpendingPieChart() {
+export function SpendingPieChart({ categories }: { categories: SpendingCategory[] }) {
   const [ready, setReady] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -32,7 +33,7 @@ export function SpendingPieChart() {
         percent: Math.round((cat.spent / total) * 100),
       }))
       .sort((a, b) => b.value - a.value) as Slice[];
-  }, []);
+  }, [categories]);
 
   const totalSpent = data.reduce((sum, slice) => sum + slice.value, 0);
   const top = data[0];

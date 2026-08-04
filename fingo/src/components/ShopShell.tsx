@@ -2,9 +2,14 @@
 
 import type { ReactNode } from "react";
 import { ShopProvider, useShop } from "@/lib/shop-store";
+import { SpendingProvider } from "@/lib/spending-store";
 
 export function ShopShell({ children }: { children: ReactNode }) {
-  return <ShopProvider>{children}</ShopProvider>;
+  return (
+    <ShopProvider>
+      <SpendingProvider>{children}</SpendingProvider>
+    </ShopProvider>
+  );
 }
 
 export function GoalPointsCard() {

@@ -41,6 +41,10 @@ ollama pull llama3.2:3b
 
 **Optional cloud providers:** set `OPENAI_API_KEY` or `GROQ_API_KEY` (see `.env.example`).
 
+## Receipt scan
+
+On **Scan**, take or upload a receipt photo. FinGo runs OCR, structures the result with the local LLM, then updates category spending and the Home pie chart after you confirm.
+
 ## Scripts
 
 - `npm run dev` — local development
