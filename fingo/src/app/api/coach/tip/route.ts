@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { buildCoachSystemPrompt } from "@/lib/coach-context";
+import { buildCoachSystemPrompt, type CoachProfile } from "@/lib/coach-context";
 import { tipOfDay } from "@/lib/data";
+import { employmentLabel, goalLabel } from "@/lib/profile";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +12,18 @@ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2:3b";
 type SpendingSnapshot = {
   categories?: Array<{ name?: string; spent?: number; budget?: number }>;
   recent?: Array<{ merchant?: string; amount?: number; date?: string }>;
+  profile?: CoachProfile;
 };
+
+function normalizeProfile(profile?: CoachProfile): CoachProfile | undefined {
+  if (!profile) return undefined;
+  return {
+    name: typeof profile.name === "string" ? profile.name.slice(0, 60) : undefined,
+    employment: employmentLabel(profile.employment) || undefined,
+    salary: typeof profile.salary === "number" ? profile.salary : undefined,
+    goal: goalLabel(profile.goal) || undefined,
+  };
+}
 
 type Tip = { title: string; body: string; source: "ai" | "static" };
 
@@ -24,7 +36,10 @@ function snapshotKey(snapshot: SpendingSnapshot) {
   const spent = (snapshot.categories || [])
     .map((c) => Math.round(c.spent || 0))
     .join(",");
-  return `${day}|${spent}`;
+  const profile = snapshot.profile
+    ? `${snapshot.profile.employment || ""}|${snapshot.profile.salary || ""}|${snapshot.profile.goal || ""}`
+    : "";
+  return `${day}|${spent}|${profile}`;
 }
 
 function extractJson(text: string): Record<string, unknown> | null {
@@ -84,7 +99,7 @@ async function generateTip(snapshot: SpendingSnapshot): Promise<Tip | null> {
         messages: [
           {
             role: "system",
-            content: `${buildCoachSystemPrompt()}\n\nTask: write today's Tip of the Day for the home screen. One specific, actionable tip grounded in the numbers above (use dollar amounts). Reply with ONLY compact JSON: {"title": string (max 5 words), "body": string (one sentence, max 30 words)}.`,
+            content: `${buildCoachSystemPrompt(normalizeProfile(snapshot.profile))}\n\nTask: write today's Tip of the Day for the home screen. One specific, actionable tip grounded in the numbers above (use dollar amounts). Reply with ONLY compact JSON: {"title": string (max 5 words), "body": string (one sentence, max 30 words)}.`,
           },
           {
             role: "user",

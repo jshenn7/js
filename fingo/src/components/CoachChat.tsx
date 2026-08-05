@@ -10,6 +10,7 @@ import {
 } from "react";
 import { LoaderCircle, Send } from "lucide-react";
 import { coachStarters } from "@/lib/data";
+import { loadProfile } from "@/lib/profile";
 
 type Message = { id: string; role: "user" | "coach"; text: string };
 
@@ -17,11 +18,16 @@ export type CoachChatHandle = {
   send: (text: string) => void;
 };
 
-const GREETING: Message = {
-  id: "m0",
-  role: "coach",
-  text: "Hey Alex — I’m your FinGo Coach. Ask me about budgets, subscriptions, or shared goals.",
-};
+function greetingFor(name?: string | null): Message {
+  const first = (name || "").trim().split(/\s+/)[0];
+  return {
+    id: "m0",
+    role: "coach",
+    text: `Hey${first ? ` ${first}` : ""} — I’m your FinGo Coach. Ask me about budgets, subscriptions, or shared goals.`,
+  };
+}
+
+const GREETING = greetingFor("Alex");
 
 type CoachChatProps = {
   compact?: boolean;
@@ -47,6 +53,15 @@ export const CoachChat = forwardRef<CoachChatHandle, CoachChatProps>(
       if (!el) return;
       el.scrollTop = el.scrollHeight;
     }, [messages, busy]);
+
+    // Personalize the greeting after mount (profile lives in localStorage).
+    useEffect(() => {
+      const profile = loadProfile();
+      if (!profile?.name) return;
+      setMessages((prev) =>
+        prev.map((m) => (m.id === "m0" ? greetingFor(profile.name) : m)),
+      );
+    }, []);
 
     useImperativeHandle(ref, () => ({ send: (text: string) => void send(text) }));
 
@@ -74,6 +89,7 @@ export const CoachChat = forwardRef<CoachChatHandle, CoachChatProps>(
                 role: m.role === "user" ? "user" : "assistant",
                 content: m.text,
               })),
+            profile: loadProfile() || undefined,
           }),
         });
 

@@ -7,6 +7,7 @@ import { MomentumChart } from "@/components/MomentumChart";
 import { SpendingPieChart } from "@/components/SpendingPieChart";
 import { Panel, ProgressBar, SectionHeader } from "@/components/ui";
 import { formatMoney, tipOfDay, user } from "@/lib/data";
+import { loadProfile } from "@/lib/profile";
 import { useSpending } from "@/lib/spending-store";
 
 type Tip = { title: string; body: string; source: "ai" | "static" };
@@ -15,6 +16,12 @@ export default function HomeDashboard() {
   const { categories, transactions } = useSpending();
   const topSpend = [...categories].sort((a, b) => b.spent - a.spent)[0];
   const latestReceipt = transactions[0];
+
+  const [firstName, setFirstName] = useState(user.name.split(" ")[0]);
+  useEffect(() => {
+    const profile = loadProfile();
+    if (profile?.name) setFirstName(profile.name.split(/\s+/)[0]);
+  }, []);
 
   const [tip, setTip] = useState<Tip>({ ...tipOfDay, source: "static" });
   const [tipLoading, setTipLoading] = useState(true);
@@ -47,6 +54,7 @@ export default function HomeDashboard() {
               amount: t.amount,
               date: t.date,
             })),
+            profile: loadProfile() || undefined,
           }),
         });
         if (!res.ok) return null;
@@ -85,7 +93,7 @@ export default function HomeDashboard() {
       <div className="animate-rise flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-muted">
-            Good afternoon, {user.name.split(" ")[0]}
+            Good afternoon, {firstName}
           </p>
           <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
             Your Hub

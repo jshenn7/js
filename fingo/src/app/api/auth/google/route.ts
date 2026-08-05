@@ -19,7 +19,13 @@ export function GET(request: NextRequest) {
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    const user = { email: "alex.rivera@gmail.com", name: "Alex Rivera" };
+    const onboardingName = (request.nextUrl.searchParams.get("name") || "")
+      .trim()
+      .slice(0, 60);
+    const user = {
+      email: "alex.rivera@gmail.com",
+      name: onboardingName || "Alex Rivera",
+    };
     const response = NextResponse.redirect(new URL(next, request.nextUrl.origin));
     response.cookies.set(AUTH_COOKIE, encodeSession(user), {
       httpOnly: true,

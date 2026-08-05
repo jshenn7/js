@@ -5,6 +5,7 @@ type LoginBody = {
   email?: string;
   password?: string;
   demo?: boolean;
+  name?: string;
 };
 
 export async function POST(request: Request) {
@@ -32,11 +33,12 @@ export async function POST(request: Request) {
     );
   }
 
+  const onboardingName = (body.name || "").trim().slice(0, 60);
   const user = isDemo || validDemo
-    ? { email: demoAccount.email, name: demoAccount.name }
+    ? { email: demoAccount.email, name: onboardingName || demoAccount.name }
     : {
         email,
-        name: email.split("@")[0]?.replace(/[._]/g, " ") || "Saver",
+        name: onboardingName || email.split("@")[0]?.replace(/[._]/g, " ") || "Saver",
       };
 
   const response = NextResponse.json({ ok: true, user });

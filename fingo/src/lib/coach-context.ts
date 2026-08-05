@@ -8,7 +8,25 @@ import {
   user,
 } from "@/lib/data";
 
-export function buildCoachSystemPrompt() {
+export type CoachProfile = {
+  name?: string;
+  employment?: string;
+  salary?: number | null;
+  goal?: string | null;
+};
+
+function profileBlock(profile?: CoachProfile) {
+  if (!profile) return "";
+  const lines: string[] = [];
+  if (profile.name) lines.push(`- Name: ${profile.name}`);
+  if (profile.employment) lines.push(`- Employment: ${profile.employment}`);
+  if (profile.salary) lines.push(`- Yearly income: ${formatMoney(profile.salary)}`);
+  if (profile.goal) lines.push(`- Top money goal: ${profile.goal}`);
+  if (!lines.length) return "";
+  return `\nONBOARDING PROFILE (from the user, trust this over defaults)\n${lines.join("\n")}\n`;
+}
+
+export function buildCoachSystemPrompt(profile?: CoachProfile) {
   const totalSpent = categories.reduce((sum, c) => sum + c.spent, 0);
   const totalBudget = categories.reduce((sum, c) => sum + c.budget, 0);
   const flexibleLeft = categories
@@ -43,11 +61,11 @@ Do not invent transactions that aren't in the snapshot. If something is unknown,
 Never give legal/tax advice; stay focused on budgeting, bills, subscriptions, and savings goals.
 
 USER PROFILE
-- Name: ${user.name}
+- Name: ${profile?.name || user.name}
 - Level: ${user.level}
 - Streak: ${user.streak} days
 - Goal Points: ${user.goalPoints}
-
+${profileBlock(profile)}
 TIP OF THE DAY
 ${tipOfDay.body}
 

@@ -1,12 +1,28 @@
 import { NextResponse } from "next/server";
-import { buildCoachSystemPrompt, type ChatMessage } from "@/lib/coach-context";
+import {
+  buildCoachSystemPrompt,
+  type ChatMessage,
+  type CoachProfile,
+} from "@/lib/coach-context";
+import { employmentLabel, goalLabel } from "@/lib/profile";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type Body = {
   messages?: Array<{ role: "user" | "coach" | "assistant"; content?: string; text?: string }>;
+  profile?: CoachProfile;
 };
+
+function normalizeProfile(profile?: CoachProfile): CoachProfile | undefined {
+  if (!profile) return undefined;
+  return {
+    name: typeof profile.name === "string" ? profile.name.slice(0, 60) : undefined,
+    employment: employmentLabel(profile.employment) || undefined,
+    salary: typeof profile.salary === "number" ? profile.salary : undefined,
+    goal: goalLabel(profile.goal) || undefined,
+  };
+}
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2:3b";
@@ -24,7 +40,7 @@ function normalizeMessages(body: Body): ChatMessage[] {
     .slice(-16);
 }
 
-async function streamFromOllama(messages: ChatMessage[]) {
+async function streamFromOllama(messages: ChatMessage[], system: string) {
   const res = await fetch(`${OLLAMA_HOST}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -36,7 +52,7 @@ async function streamFromOllama(messages: ChatMessage[]) {
         temperature: 0.6,
         num_predict: 450,
       },
-      messages: [{ role: "system", content: buildCoachSystemPrompt() }, ...messages],
+      messages: [{ role: "system", content: system }, ...messages],
     }),
   });
 
@@ -95,6 +111,7 @@ async function streamFromOpenAICompatible(
   apiKey: string,
   model: string,
   messages: ChatMessage[],
+  system: string,
 ) {
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
@@ -106,7 +123,7 @@ async function streamFromOpenAICompatible(
       model,
       stream: true,
       temperature: 0.6,
-      messages: [{ role: "system", content: buildCoachSystemPrompt() }, ...messages],
+      messages: [{ role: "system", content: system }, ...messages],
     }),
   });
 
@@ -161,13 +178,15 @@ async function streamFromOpenAICompatible(
   });
 }
 
-async function createReplyStream(messages: ChatMessage[]) {
+async function createReplyStream(messages: ChatMessage[], profile?: CoachProfile) {
+  const system = buildCoachSystemPrompt(profile);
   if (process.env.OPENAI_API_KEY) {
     return streamFromOpenAICompatible(
       process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
       process.env.OPENAI_API_KEY,
       process.env.OPENAI_MODEL || "gpt-4o-mini",
       messages,
+      system,
     );
   }
   if (process.env.GROQ_API_KEY) {
@@ -176,11 +195,12 @@ async function createReplyStream(messages: ChatMessage[]) {
       process.env.GROQ_API_KEY,
       process.env.GROQ_MODEL || "llama-3.1-8b-instant",
       messages,
+      system,
     );
   }
 
   // Default: local Ollama
-  return streamFromOllama(messages);
+  return streamFromOllama(messages, system);
 }
 
 export async function POST(request: Request) {
@@ -197,7 +217,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const stream = await createReplyStream(messages);
+    const stream = await createReplyStream(messages, normalizeProfile(body.profile));
     return new Response(stream, {
       headers: {
         "Content-Type": "text/event-stream; charset=utf-8",
