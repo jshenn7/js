@@ -6,6 +6,7 @@ type SignupBody = {
   email?: string;
   password?: string;
   name?: string;
+  username?: string;
   profile?: { employment?: string; salary?: number | null; goal?: string | null };
 };
 
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
     email: body.email || "",
     name: body.name || "",
     password: body.password || "",
+    username: body.username || "",
   });
 
   if (!result.ok) {

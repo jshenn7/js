@@ -1,17 +1,18 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight, Flame, Sparkles, Users } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function LandingPage() {
   return (
     <main className="relative min-h-screen overflow-hidden">
       <section className="relative min-h-screen">
         <div
-          className="absolute inset-0 bg-gradient-to-br from-[#0a6b48] via-[#0d8a5b] to-[#2a9ec4]"
+          className="absolute inset-0 bg-gradient-to-br from-[#0a6b48] via-[#0d8a5b] to-[#2a9ec4] dark:from-[#071a12] dark:via-[#0a2a1c] dark:to-[#0c2a36]"
           aria-hidden
         />
         <div
-          className="absolute inset-0 opacity-40"
+          className="absolute inset-0 opacity-40 dark:opacity-25"
           style={{
             backgroundImage:
               "radial-gradient(circle at 20% 20%, rgba(255,241,168,0.55), transparent 35%), radial-gradient(circle at 80% 30%, rgba(255,106,61,0.35), transparent 30%), radial-gradient(circle at 60% 80%, rgba(255,255,255,0.18), transparent 40%)",
@@ -30,12 +31,15 @@ export default function LandingPage() {
             </span>
             FinGo
           </div>
-          <Link
-            href="/app"
-            className="tactile rounded-full bg-white/15 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/40 backdrop-blur-sm"
-          >
-            Open app
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link
+              href="/app"
+              className="tactile rounded-full bg-white/15 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/40 backdrop-blur-sm"
+            >
+              Open app
+            </Link>
+          </div>
         </header>
 
         <div className="relative z-10 mx-auto flex min-h-[calc(100vh-5.5rem)] max-w-6xl flex-col justify-end px-5 pb-16 pt-10 md:justify-center md:px-8 md:pb-24">

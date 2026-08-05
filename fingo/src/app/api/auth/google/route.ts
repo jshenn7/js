@@ -19,6 +19,7 @@ export function GET(request: NextRequest) {
   const onboardingName = (request.nextUrl.searchParams.get("name") || "")
     .trim()
     .slice(0, 60);
+  const username = (request.nextUrl.searchParams.get("username") || "").trim();
   const employment = request.nextUrl.searchParams.get("employment") || "";
   const salary = request.nextUrl.searchParams.get("salary") || "";
   const goal = request.nextUrl.searchParams.get("goal") || "";
@@ -29,13 +30,13 @@ export function GET(request: NextRequest) {
     // Demo Google path: each distinct display name gets its own account so
     // it never collides with the password-based demo user.
     const slug =
-      (onboardingName || "guest")
+      (username || onboardingName || "guest")
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, ".")
         .replace(/^\.+|\.+$/g, "")
         .slice(0, 32) || "guest";
     const email = `${slug}.google@fingo.app`;
-    const user = upsertGoogleUser(email, onboardingName || "Google User");
+    const user = upsertGoogleUser(email, onboardingName || "Google User", username || null);
     if (employment || salary || goal) {
       try {
         saveProfileRow(user.email, {
@@ -63,6 +64,7 @@ export function GET(request: NextRequest) {
       nonce: crypto.randomUUID(),
       next,
       name: onboardingName,
+      username,
       employment,
       salary,
       goal,

@@ -134,7 +134,10 @@ export default function ProfilePage() {
                 </span>
               ) : null}
             </div>
-            <p className="text-sm text-muted">{user.handle}</p>
+            <p className="text-sm text-muted">
+              {account?.handle ||
+                (account?.username ? `@${account.username}` : user.handle)}
+            </p>
             <div className="mt-3">
               <div className="mb-1 flex justify-between text-sm font-semibold">
                 <span>Level {level}</span>

@@ -11,6 +11,8 @@ import {
 type AccountUser = {
   email: string;
   name: string;
+  username?: string;
+  handle?: string;
   authProvider?: string;
 };
 

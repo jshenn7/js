@@ -5,6 +5,7 @@ import Database from "better-sqlite3";
 import { demoAccount } from "@/lib/auth";
 import { ACTION_XP, dayKey } from "@/lib/leveling";
 import { hashPassword, verifyPassword } from "@/lib/password";
+import { suggestUsername, validateUsername } from "@/lib/username";
 
 declare global {
   // Reuse one connection across dev hot reloads and route modules.
@@ -43,9 +44,16 @@ function resolveDbDir() {
 export type DbUser = {
   email: string;
   name: string;
+  username: string | null;
   password_hash: string | null;
   auth_provider: string;
   created_at: string;
+};
+
+export type PublicUser = {
+  email: string;
+  name: string;
+  username: string;
 };
 
 function createDb() {
@@ -55,6 +63,7 @@ function createDb() {
     CREATE TABLE IF NOT EXISTS users (
       email TEXT PRIMARY KEY,
       name TEXT NOT NULL,
+      username TEXT,
       password_hash TEXT,
       auth_provider TEXT NOT NULL DEFAULT 'password',
       created_at TEXT NOT NULL
@@ -108,7 +117,7 @@ function createDb() {
     );
   `);
 
-  // Migrate older databases that predate password columns.
+  // Migrate older databases that predate password/username columns.
   const cols = db.prepare("PRAGMA table_info(users)").all() as Array<{ name: string }>;
   const names = new Set(cols.map((c) => c.name));
   if (!names.has("password_hash")) {
@@ -117,6 +126,12 @@ function createDb() {
   if (!names.has("auth_provider")) {
     db.exec("ALTER TABLE users ADD COLUMN auth_provider TEXT NOT NULL DEFAULT 'password'");
   }
+  if (!names.has("username")) {
+    db.exec("ALTER TABLE users ADD COLUMN username TEXT");
+  }
+  db.exec(
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username) WHERE username IS NOT NULL",
+  );
 
   return db;
 }
@@ -129,22 +144,54 @@ export function getDb() {
   return globalThis.__fingoDb;
 }
 
+function toPublic(user: DbUser): PublicUser {
+  return {
+    email: user.email,
+    name: user.name,
+    username: user.username || suggestUsername(user.name),
+  };
+}
+
 export function getUserByEmail(email: string): DbUser | null {
   const row = getDb()
     .prepare(
-      "SELECT email, name, password_hash, auth_provider, created_at FROM users WHERE email = ?",
+      "SELECT email, name, username, password_hash, auth_provider, created_at FROM users WHERE email = ?",
     )
     .get(email.toLowerCase()) as DbUser | undefined;
   return row || null;
+}
+
+export function isUsernameTaken(username: string, exceptEmail?: string) {
+  const row = getDb()
+    .prepare("SELECT email FROM users WHERE username = ? COLLATE NOCASE LIMIT 1")
+    .get(username) as { email: string } | undefined;
+  if (!row) return false;
+  if (exceptEmail && row.email === exceptEmail.toLowerCase()) return false;
+  return true;
+}
+
+/** Pick an available username, appending digits if needed. */
+export function allocateUsername(preferred: string) {
+  const validated = validateUsername(preferred);
+  let base = validated.ok ? validated.username : "saver";
+  if (!isUsernameTaken(base)) return base;
+  for (let i = 2; i < 1000; i++) {
+    const candidate = `${base.slice(0, 16)}${i}`;
+    if (!isUsernameTaken(candidate)) return candidate;
+  }
+  return `${base.slice(0, 10)}${Date.now().toString(36)}`;
 }
 
 export function createPasswordUser(input: {
   email: string;
   name: string;
   password: string;
-}): { ok: true; user: { email: string; name: string } } | { ok: false; error: string } {
+  username: string;
+}): { ok: true; user: PublicUser } | { ok: false; error: string } {
   const email = input.email.trim().toLowerCase();
   const name = input.name.trim().slice(0, 60);
+  const usernameCheck = validateUsername(input.username);
+  if (!usernameCheck.ok) return usernameCheck;
   if (!email.includes("@") || email.length < 5) {
     return { ok: false, error: "Enter a valid email address." };
   }
@@ -157,21 +204,30 @@ export function createPasswordUser(input: {
   if (getUserByEmail(email)) {
     return { ok: false, error: "An account with that email already exists. Sign in instead." };
   }
+  if (isUsernameTaken(usernameCheck.username)) {
+    return { ok: false, error: "That username is already taken. Try another." };
+  }
 
   getDb()
     .prepare(
-      `INSERT INTO users (email, name, password_hash, auth_provider, created_at)
-       VALUES (?, ?, ?, 'password', ?)`,
+      `INSERT INTO users (email, name, username, password_hash, auth_provider, created_at)
+       VALUES (?, ?, ?, ?, 'password', ?)`,
     )
-    .run(email, name, hashPassword(input.password), new Date().toISOString());
+    .run(
+      email,
+      name,
+      usernameCheck.username,
+      hashPassword(input.password),
+      new Date().toISOString(),
+    );
 
-  return { ok: true, user: { email, name } };
+  return { ok: true, user: { email, name, username: usernameCheck.username } };
 }
 
 export function authenticatePassword(
   email: string,
   password: string,
-): { ok: true; user: { email: string; name: string } } | { ok: false; error: string } {
+): { ok: true; user: PublicUser } | { ok: false; error: string } {
   const normalized = email.trim().toLowerCase();
   if (!normalized.includes("@") || password.length < 1) {
     return { ok: false, error: "Enter your email and password." };
@@ -190,26 +246,45 @@ export function authenticatePassword(
   if (!verifyPassword(password, user.password_hash)) {
     return { ok: false, error: "Incorrect password." };
   }
-  return { ok: true, user: { email: user.email, name: user.name } };
+  return { ok: true, user: toPublic(user) };
 }
 
 /** Find-or-create a Google OAuth user. Never overwrites an existing password account. */
-export function upsertGoogleUser(email: string, name: string) {
+export function upsertGoogleUser(
+  email: string,
+  name: string,
+  preferredUsername?: string | null,
+) {
   const normalized = email.trim().toLowerCase();
+  const displayName = name.slice(0, 60) || "Saver";
   const existing = getUserByEmail(normalized);
   if (existing) {
-    if (existing.name !== name) {
-      getDb().prepare("UPDATE users SET name = ? WHERE email = ?").run(name, normalized);
+    if (existing.name !== displayName) {
+      getDb().prepare("UPDATE users SET name = ? WHERE email = ?").run(displayName, normalized);
     }
-    return { email: existing.email, name: name || existing.name, isNew: false };
+    if (!existing.username) {
+      const username = allocateUsername(preferredUsername || suggestUsername(displayName));
+      getDb()
+        .prepare("UPDATE users SET username = ? WHERE email = ?")
+        .run(username, normalized);
+      return { email: existing.email, name: displayName, username, isNew: false };
+    }
+    return {
+      email: existing.email,
+      name: displayName,
+      username: existing.username,
+      isNew: false,
+    };
   }
+
+  const username = allocateUsername(preferredUsername || suggestUsername(displayName));
   getDb()
     .prepare(
-      `INSERT INTO users (email, name, password_hash, auth_provider, created_at)
-       VALUES (?, ?, NULL, 'google', ?)`,
+      `INSERT INTO users (email, name, username, password_hash, auth_provider, created_at)
+       VALUES (?, ?, ?, NULL, 'google', ?)`,
     )
-    .run(normalized, name.slice(0, 60) || "Saver", new Date().toISOString());
-  return { email: normalized, name: name.slice(0, 60) || "Saver", isNew: true };
+    .run(normalized, displayName, username, new Date().toISOString());
+  return { email: normalized, name: displayName, username, isNew: true };
 }
 
 export function saveProfileRow(
@@ -257,14 +332,28 @@ function seedDemoUser(db: Database.Database) {
 
   if (!existing) {
     db.prepare(
-      `INSERT INTO users (email, name, password_hash, auth_provider, created_at)
-       VALUES (?, ?, ?, 'password', ?)`,
-    ).run(email, demoAccount.name, hashPassword(demoAccount.password), new Date().toISOString());
-  } else if (!existing.password_hash || !verifyPassword(demoAccount.password, existing.password_hash)) {
-    // Keep the published demo credentials working even if the DB was seeded earlier.
-    db.prepare(
-      "UPDATE users SET password_hash = ?, auth_provider = 'password', name = ? WHERE email = ?",
-    ).run(hashPassword(demoAccount.password), demoAccount.name, email);
+      `INSERT INTO users (email, name, username, password_hash, auth_provider, created_at)
+       VALUES (?, ?, ?, ?, 'password', ?)`,
+    ).run(
+      email,
+      demoAccount.name,
+      "alexr",
+      hashPassword(demoAccount.password),
+      new Date().toISOString(),
+    );
+  } else {
+    if (!existing.password_hash || !verifyPassword(demoAccount.password, existing.password_hash)) {
+      // Keep the published demo credentials working even if the DB was seeded earlier.
+      db.prepare(
+        "UPDATE users SET password_hash = ?, auth_provider = 'password', name = ? WHERE email = ?",
+      ).run(hashPassword(demoAccount.password), demoAccount.name, email);
+    }
+    const demoUser = db
+      .prepare("SELECT username FROM users WHERE email = ?")
+      .get(email) as { username: string | null };
+    if (!demoUser.username) {
+      db.prepare("UPDATE users SET username = ? WHERE email = ?").run("alexr", email);
+    }
   }
 
   const xpCount = db

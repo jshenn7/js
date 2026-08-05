@@ -5,6 +5,7 @@ import { CoachWidget } from "@/components/CoachWidget";
 import { LogoutButton } from "@/components/LogoutButton";
 import { HeaderStats } from "@/components/ProgressUI";
 import { GoalPointsCard, ShopShell } from "@/components/ShopShell";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -20,6 +21,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </Link>
             <div className="flex items-center gap-2 text-sm sm:gap-3">
               <HeaderStats />
+              <ThemeToggle />
               <LogoutButton />
             </div>
           </div>

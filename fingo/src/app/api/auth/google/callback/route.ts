@@ -17,6 +17,7 @@ type OAuthState = {
   nonce?: string;
   next?: string;
   name?: string;
+  username?: string;
   employment?: string;
   salary?: string;
   goal?: string;
@@ -81,7 +82,7 @@ export async function GET(request: NextRequest) {
       profile.email.split("@")[0] ||
       "Saver";
 
-    const user = upsertGoogleUser(profile.email, displayName);
+    const user = upsertGoogleUser(profile.email, displayName, parsed.username || null);
     if (parsed.employment || parsed.salary || parsed.goal) {
       saveProfileRow(user.email, {
         employment: parsed.employment || null,
