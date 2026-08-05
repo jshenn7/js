@@ -45,6 +45,14 @@ ollama pull llama3.2:3b
 
 On **Scan**, take or upload a receipt photo. FinGo runs OCR, structures the result with the local LLM, then updates category spending and the Home pie chart after you confirm.
 
+OCR runs on the server with the native Tesseract binary (fast and reliable):
+
+```bash
+sudo apt-get install -y tesseract-ocr
+```
+
+If the binary isn't installed, the app automatically falls back to in-browser OCR (tesseract.js), which is slower and downloads ~15 MB of model data on first scan.
+
 ## Scripts
 
 - `npm run dev` — local development

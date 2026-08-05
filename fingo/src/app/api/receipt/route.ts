@@ -1,3 +1,8 @@
+import { execFile } from "node:child_process";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
 import { NextResponse } from "next/server";
 import {
   categoryOptions,
@@ -12,10 +17,74 @@ export const dynamic = "force-dynamic";
 const OLLAMA_HOST = process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
 const TEXT_MODEL = process.env.OLLAMA_MODEL || "llama3.2:3b";
 
+const execFileAsync = promisify(execFile);
+
 type Body = {
   ocrText?: string;
   imageBase64?: string;
 };
+
+function decodeImage(imageBase64: string): { buffer: Buffer; ext: string } | null {
+  const match = imageBase64.match(/^data:image\/(png|jpe?g|webp);base64,(.+)$/i);
+  const ext = match ? (match[1].toLowerCase() === "png" ? "png" : "jpg") : "jpg";
+  const payload = match ? match[2] : imageBase64;
+  try {
+    const buffer = Buffer.from(payload, "base64");
+    if (buffer.length < 100) return null;
+    return { buffer, ext };
+  } catch {
+    return null;
+  }
+}
+
+async function runTesseract(file: string, psm: string): Promise<string> {
+  const { stdout } = await execFileAsync(
+    "tesseract",
+    [file, "stdout", "-l", "eng", "--psm", psm],
+    {
+      timeout: 15000,
+      maxBuffer: 4 * 1024 * 1024,
+      // Tesseract's OpenMP threads busy-wait and can spin forever when
+      // spawned from the server under CPU contention; single-threaded OCR
+      // finishes in well under a second.
+      env: { ...process.env, OMP_THREAD_LIMIT: "1" },
+    },
+  );
+  return (stdout || "").trim();
+}
+
+function usefulChars(text: string) {
+  return (text.match(/[a-z0-9]/gi) || []).length;
+}
+
+/**
+ * OCR the image with the native tesseract binary. Returns null when the
+ * binary is not installed so the client can fall back to in-browser OCR.
+ */
+async function ocrImageOnServer(imageBase64: string): Promise<string | null> {
+  const decoded = decodeImage(imageBase64);
+  if (!decoded) return "";
+
+  const dir = await mkdtemp(join(tmpdir(), "fingo-receipt-"));
+  const file = join(dir, `receipt.${decoded.ext}`);
+  try {
+    await writeFile(file, decoded.buffer);
+    // PSM 6 (uniform block) fits most receipts; PSM 4 (single column)
+    // catches layouts PSM 6 misses. Run sequentially and keep the richer read.
+    const texts: string[] = [];
+    for (const psm of ["6", "4"]) {
+      try {
+        texts.push(await runTesseract(file, psm));
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+      }
+    }
+    if (texts.length === 0) return "";
+    return texts.sort((a, b) => usefulChars(b) - usefulChars(a))[0] || "";
+  } finally {
+    await rm(dir, { recursive: true, force: true }).catch(() => undefined);
+  }
+}
 
 function extractJson(text: string): Record<string, unknown> | null {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -177,7 +246,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const ocrText = (body.ocrText || "").trim();
+  let ocrText = (body.ocrText || "").trim();
+
+  if (!ocrText && body.imageBase64) {
+    const serverText = await ocrImageOnServer(body.imageBase64);
+    if (serverText === null) {
+      return NextResponse.json(
+        {
+          error: "Server OCR is unavailable.",
+          needClientOcr: true,
+        },
+        { status: 501 },
+      );
+    }
+    ocrText = serverText.trim();
+    if (usefulChars(ocrText) < 8) {
+      return NextResponse.json(
+        {
+          error:
+            "Couldn’t read text from that photo. Fill the frame with the receipt, keep it flat, and use good lighting.",
+        },
+        { status: 422 },
+      );
+    }
+  }
+
   if (!ocrText) {
     return NextResponse.json(
       {

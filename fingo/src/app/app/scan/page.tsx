@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, Check, ImagePlus, LoaderCircle, RefreshCw, Sparkles } from "lucide-react";
 import { Panel, SectionHeader } from "@/components/ui";
 import { formatMoney } from "@/lib/data";
-import { ocrReceiptImage } from "@/lib/receipt-ocr";
 import {
   categoryOptions,
   type CategoryId,
@@ -49,7 +48,7 @@ export default function ScanPage() {
     setConfidence(null);
 
     const dataUrl = await readFileAsDataUrl(file);
-    const compressed = await compressImage(dataUrl, 1280);
+    const compressed = await compressImage(dataUrl, 1600);
     setPreview(compressed);
     await scanImage(compressed);
   }
@@ -58,20 +57,32 @@ export default function ScanPage() {
     setBusy(true);
     setError(null);
     try {
-      const ocrText = await ocrReceiptImage(dataUrl);
-      if (!ocrText) {
-        throw new Error("Couldn’t read text from that photo. Try better lighting.");
-      }
-
-      const res = await fetch("/api/receipt", {
+      // The server OCRs the photo with native Tesseract. If that endpoint
+      // reports OCR is unavailable, fall back to in-browser OCR.
+      let res = await fetch("/api/receipt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ocrText }),
+        body: JSON.stringify({ imageBase64: dataUrl }),
       });
-      const data = (await res.json()) as {
+      let data = (await res.json()) as {
         error?: string;
+        needClientOcr?: boolean;
         result?: ReceiptParseResult;
       };
+
+      if (res.status === 501 && data.needClientOcr) {
+        const { ocrReceiptImage } = await import("@/lib/receipt-ocr");
+        const ocrText = await ocrReceiptImage(dataUrl);
+        if (!ocrText) {
+          throw new Error("Couldn’t read text from that photo. Try better lighting.");
+        }
+        res = await fetch("/api/receipt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ocrText }),
+        });
+        data = (await res.json()) as typeof data;
+      }
       if (!res.ok || !data.result) {
         if (data.result) {
           setDraft({
