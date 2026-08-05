@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { AppNav } from "@/components/AppNav";
+import { CoachWidget } from "@/components/CoachWidget";
 import { LogoutButton } from "@/components/LogoutButton";
 import { GoalPointsCard, ShopShell } from "@/components/ShopShell";
 import { user } from "@/lib/data";
@@ -42,6 +43,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <div className="md:hidden">
           <AppNav />
         </div>
+
+        <CoachWidget />
       </div>
     </ShopShell>
   );

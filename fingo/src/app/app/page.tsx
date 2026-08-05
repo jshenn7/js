@@ -1,17 +1,59 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Camera, Sparkles } from "lucide-react";
+import { Camera, LoaderCircle, MessageCircleQuestion, Sparkles } from "lucide-react";
 import { MomentumChart } from "@/components/MomentumChart";
 import { SpendingPieChart } from "@/components/SpendingPieChart";
 import { Panel, ProgressBar, SectionHeader } from "@/components/ui";
 import { formatMoney, tipOfDay, user } from "@/lib/data";
 import { useSpending } from "@/lib/spending-store";
 
+type Tip = { title: string; body: string; source: "ai" | "static" };
+
 export default function HomeDashboard() {
   const { categories, transactions } = useSpending();
   const topSpend = [...categories].sort((a, b) => b.spent - a.spent)[0];
   const latestReceipt = transactions[0];
+
+  const [tip, setTip] = useState<Tip>({ ...tipOfDay, source: "static" });
+  const [tipLoading, setTipLoading] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadTip() {
+      try {
+        const res = await fetch("/api/coach/tip", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            categories: categories.map((c) => ({
+              name: c.name,
+              spent: c.spent,
+              budget: c.budget,
+            })),
+            recent: transactions.slice(0, 5).map((t) => ({
+              merchant: t.merchant,
+              amount: t.amount,
+              date: t.date,
+            })),
+          }),
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as { tip?: Tip };
+        if (data.tip?.body) setTip(data.tip);
+      } catch {
+        // keep the static tip
+      } finally {
+        if (!controller.signal.aborted) setTipLoading(false);
+      }
+    }
+    void loadTip();
+    return () => controller.abort();
+    // Fetch once on mount with whatever spending data is loaded by then.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-5">
@@ -38,22 +80,42 @@ export default function HomeDashboard() {
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="max-w-xl">
             <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wider">
-              <Sparkles className="h-3.5 w-3.5" />
-              {tipOfDay.title}
+              {tipLoading ? (
+                <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              {tip.source === "ai" ? "Live coach tip" : tip.title}
             </div>
-            <p className="text-lg font-semibold leading-snug md:text-xl">{tipOfDay.body}</p>
+            <p className="text-lg font-semibold leading-snug md:text-xl">{tip.body}</p>
             {latestReceipt ? (
               <p className="mt-3 text-sm text-white/85">
                 Latest scan: {latestReceipt.merchant} · {formatMoney(latestReceipt.amount)}
               </p>
             ) : null}
           </div>
-          <Link
-            href="/app/scan"
-            className="tactile shrink-0 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-primary-deep shadow-soft"
-          >
-            Add from photo
-          </Link>
+          <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("fingo:open-coach", {
+                    detail: { prompt: `Tell me more about this tip and how to act on it: ${tip.body}` },
+                  }),
+                )
+              }
+              className="tactile inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-primary-deep shadow-soft"
+            >
+              <MessageCircleQuestion className="h-4 w-4" />
+              Ask the coach
+            </button>
+            <Link
+              href="/app/scan"
+              className="tactile rounded-2xl bg-white/15 px-4 py-2 text-center text-xs font-bold text-white ring-1 ring-white/30"
+            >
+              Add from photo
+            </Link>
+          </div>
         </div>
       </Panel>
 
