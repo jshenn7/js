@@ -1,4 +1,5 @@
 export const AUTH_COOKIE = "fingo_session";
+export const GOOGLE_STATE_COOKIE = "fingo_google_state";
 
 export const demoAccount = {
   email: "alex@fingo.app",

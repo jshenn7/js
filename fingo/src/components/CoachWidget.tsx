@@ -11,13 +11,22 @@ import { CoachChat, type CoachChatHandle } from "@/components/CoachChat";
  * Other components can open it (optionally pre-sending a prompt) via:
  * window.dispatchEvent(new CustomEvent("fingo:open-coach", { detail: { prompt } }))
  */
+const DISMISS_KEY = "fingo-coach-widget-dismissed";
+
 export function CoachWidget() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const chatRef = useRef<CoachChatHandle>(null);
 
   useEffect(() => {
+    setDismissed(window.sessionStorage.getItem(DISMISS_KEY) === "1");
+  }, []);
+
+  useEffect(() => {
     function onOpenCoach(event: Event) {
+      setDismissed(false);
+      window.sessionStorage.removeItem(DISMISS_KEY);
       setOpen(true);
       const prompt = (event as CustomEvent<{ prompt?: string }>).detail?.prompt;
       if (prompt) {
@@ -29,8 +38,14 @@ export function CoachWidget() {
     return () => window.removeEventListener("fingo:open-coach", onOpenCoach);
   }, []);
 
+  function dismiss() {
+    setOpen(false);
+    setDismissed(true);
+    window.sessionStorage.setItem(DISMISS_KEY, "1");
+  }
+
   // The full coach page already has the chat — no need for the widget there.
-  if (pathname.startsWith("/app/coach")) return null;
+  if (pathname.startsWith("/app/coach") || dismissed) return null;
 
   return (
     <>
@@ -70,15 +85,26 @@ export function CoachWidget() {
         </div>
       ) : null}
 
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Close AI Coach" : "Open AI Coach"}
-        className="tactile fixed bottom-[max(5.25rem,calc(env(safe-area-inset-bottom)+4.5rem))] right-4 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-primary to-sky px-4 py-3 font-bold text-white shadow-lift md:bottom-6 md:right-6"
-      >
-        <Sparkles className="h-5 w-5" />
-        <span className="hidden text-sm sm:inline">{open ? "Close" : "AI Coach"}</span>
-      </button>
+      <div className="fixed bottom-[max(5.25rem,calc(env(safe-area-inset-bottom)+4.5rem))] right-4 z-50 md:bottom-6 md:right-6">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-label={open ? "Close AI Coach" : "Open AI Coach"}
+          className="tactile flex items-center gap-2 rounded-full bg-gradient-to-r from-primary to-sky px-4 py-3 font-bold text-white shadow-lift"
+        >
+          <Sparkles className="h-5 w-5" />
+          <span className="hidden text-sm sm:inline">{open ? "Close" : "AI Coach"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={dismiss}
+          aria-label="Hide AI Coach button"
+          title="Hide AI Coach button"
+          className="absolute -right-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full border border-line bg-surface text-ink-soft shadow-soft hover:bg-danger-soft hover:text-danger"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
     </>
   );
 }

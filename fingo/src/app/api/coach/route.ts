@@ -31,6 +31,7 @@ async function streamFromOllama(messages: ChatMessage[]) {
     body: JSON.stringify({
       model: OLLAMA_MODEL,
       stream: true,
+      keep_alive: "24h",
       options: {
         temperature: 0.6,
         num_predict: 450,

@@ -213,6 +213,7 @@ async function structureWithLlm(ocrText: string): Promise<ReceiptParseResult | n
       body: JSON.stringify({
         model: TEXT_MODEL,
         stream: false,
+        keep_alive: "24h",
         options: { temperature: 0.1, num_predict: 180 },
         messages: [
           {

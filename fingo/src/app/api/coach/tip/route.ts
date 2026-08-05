@@ -79,6 +79,7 @@ async function generateTip(snapshot: SpendingSnapshot): Promise<Tip | null> {
       body: JSON.stringify({
         model: OLLAMA_MODEL,
         stream: false,
+        keep_alive: "24h",
         options: { temperature: 0.7, num_predict: 120 },
         messages: [
           {

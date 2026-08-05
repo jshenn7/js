@@ -21,7 +21,16 @@ export default function HomeDashboard() {
 
   useEffect(() => {
     const controller = new AbortController();
-    async function loadTip() {
+    const sleep = (ms: number) =>
+      new Promise<void>((resolve) => {
+        const id = window.setTimeout(resolve, ms);
+        controller.signal.addEventListener("abort", () => {
+          window.clearTimeout(id);
+          resolve();
+        });
+      });
+
+    async function fetchTip(): Promise<Tip | null> {
       try {
         const res = await fetch("/api/coach/tip", {
           method: "POST",
@@ -40,15 +49,31 @@ export default function HomeDashboard() {
             })),
           }),
         });
-        if (!res.ok) return;
+        if (!res.ok) return null;
         const data = (await res.json()) as { tip?: Tip };
-        if (data.tip?.body) setTip(data.tip);
+        return data.tip?.body ? data.tip : null;
       } catch {
-        // keep the static tip
-      } finally {
-        if (!controller.signal.aborted) setTipLoading(false);
+        return null;
       }
     }
+
+    // The first attempt can catch the model mid-load; retry a couple of
+    // times before settling for the static tip.
+    async function loadTip() {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (controller.signal.aborted) return;
+        const result = await fetchTip();
+        if (result?.source === "ai") {
+          setTip(result);
+          setTipLoading(false);
+          return;
+        }
+        if (result) setTip(result);
+        await sleep(8000);
+      }
+      if (!controller.signal.aborted) setTipLoading(false);
+    }
+
     void loadTip();
     return () => controller.abort();
     // Fetch once on mount with whatever spending data is loaded by then.

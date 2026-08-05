@@ -5,6 +5,29 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, LockKeyhole, Mail } from "lucide-react";
 import { demoAccount } from "@/lib/auth";
 
+function GoogleLogo() {
+  return (
+    <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden>
+      <path
+        fill="#FFC107"
+        d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34 6 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"
+      />
+      <path
+        fill="#FF3D00"
+        d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34 6 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"
+      />
+      <path
+        fill="#4CAF50"
+        d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"
+      />
+      <path
+        fill="#1976D2"
+        d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C41.4 35.4 44 30.2 44 24c0-1.3-.1-2.6-.4-3.9z"
+      />
+    </svg>
+  );
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -15,7 +38,9 @@ function LoginForm() {
 
   const [email, setEmail] = useState(demoAccount.email);
   const [password, setPassword] = useState(demoAccount.password);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    () => searchParams.get("error") || null,
+  );
   const [loading, setLoading] = useState(false);
 
   async function submit(payload: { email?: string; password?: string; demo?: boolean }) {
@@ -139,11 +164,19 @@ function LoginForm() {
             <span className="h-px flex-1 bg-line" />
           </div>
 
+          <a
+            href={`/api/auth/google?next=${encodeURIComponent(nextPath)}`}
+            className="tactile flex w-full items-center justify-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3 text-sm font-bold text-ink shadow-soft"
+          >
+            <GoogleLogo />
+            Continue with Google
+          </a>
+
           <button
             type="button"
             disabled={loading}
             onClick={() => void submit({ demo: true })}
-            className="tactile w-full rounded-2xl border border-line bg-bg/50 px-4 py-3 text-sm font-bold text-ink disabled:opacity-70"
+            className="tactile mt-3 w-full rounded-2xl border border-line bg-bg/50 px-4 py-3 text-sm font-bold text-ink disabled:opacity-70"
           >
             Continue with demo account
           </button>
