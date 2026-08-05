@@ -1,14 +1,21 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { CelebrationOverlay } from "@/components/ProgressUI";
+import { ProgressProvider } from "@/lib/progress-store";
 import { ShopProvider, useShop } from "@/lib/shop-store";
 import { SpendingProvider } from "@/lib/spending-store";
 
 export function ShopShell({ children }: { children: ReactNode }) {
   return (
-    <ShopProvider>
-      <SpendingProvider>{children}</SpendingProvider>
-    </ShopProvider>
+    <ProgressProvider>
+      <ShopProvider>
+        <SpendingProvider>
+          {children}
+          <CelebrationOverlay />
+        </SpendingProvider>
+      </ShopProvider>
+    </ProgressProvider>
   );
 }
 

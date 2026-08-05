@@ -106,7 +106,15 @@ function LoginForm() {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, name: name.trim() || undefined }),
+        body: JSON.stringify({
+          ...payload,
+          name: name.trim() || undefined,
+          profile: {
+            employment,
+            salary: salary ? Number(salary) : null,
+            goal,
+          },
+        }),
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {

@@ -11,6 +11,7 @@ import {
 import { LoaderCircle, Send } from "lucide-react";
 import { coachStarters } from "@/lib/data";
 import { loadProfile } from "@/lib/profile";
+import { useProgress } from "@/lib/progress-store";
 
 type Message = { id: string; role: "user" | "coach"; text: string };
 
@@ -36,6 +37,7 @@ type CoachChatProps = {
 
 export const CoachChat = forwardRef<CoachChatHandle, CoachChatProps>(
   function CoachChat({ compact = false, onBusyChange }, ref) {
+    const { recordAction } = useProgress();
     const [messages, setMessages] = useState<Message[]>([GREETING]);
     const [input, setInput] = useState("");
     const [busy, setBusyState] = useState(false);
@@ -137,6 +139,8 @@ export const CoachChat = forwardRef<CoachChatHandle, CoachChatProps>(
         if (!full.trim()) {
           throw new Error("The coach returned an empty reply. Try again.");
         }
+
+        void recordAction("coach");
       } catch (err) {
         const message = err instanceof Error ? err.message : "Something went wrong.";
         setError(message);

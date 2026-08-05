@@ -1,16 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bot, Zap } from "lucide-react";
 import { Panel, SectionHeader, StatusTag } from "@/components/ui";
 import { bills as initialBills, calendarDays, formatMoney } from "@/lib/data";
+import { useProgress } from "@/lib/progress-store";
 
 export default function BillsPage() {
+  const { recordAction } = useProgress();
+  const visited = useRef(false);
   const [subs, setSubs] = useState(
     Object.fromEntries(
       initialBills.filter((b) => b.toggle).map((b) => [b.id, true]),
     ) as Record<string, boolean>,
   );
+
+  // Reviewing bills counts toward the daily quest (server caps the XP).
+  useEffect(() => {
+    if (visited.current) return;
+    visited.current = true;
+    void recordAction("bills");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-5">

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_COOKIE, encodeSession, GOOGLE_STATE_COOKIE } from "@/lib/auth";
+import { ensureUser } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,6 +58,12 @@ export async function GET(request: NextRequest) {
       email: profile.email,
       name: profile.name || profile.email.split("@")[0] || "Saver",
     };
+
+    try {
+      ensureUser(user.email, user.name);
+    } catch {
+      // Login still succeeds if the database is unavailable.
+    }
 
     const response = NextResponse.redirect(
       new URL(next.startsWith("/") ? next : "/app", request.nextUrl.origin),

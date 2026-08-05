@@ -9,6 +9,7 @@ import {
   type CategoryId,
   type ReceiptParseResult,
 } from "@/lib/spending";
+import { useProgress } from "@/lib/progress-store";
 import { useSpending } from "@/lib/spending-store";
 
 type Draft = {
@@ -21,6 +22,7 @@ type Draft = {
 
 export default function ScanPage() {
   const { addReceipt, transactions, categories } = useSpending();
+  const { recordAction } = useProgress();
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -125,6 +127,16 @@ export default function ScanPage() {
       categoryId: draft.categoryId,
       date: draft.date,
       note: draft.note || undefined,
+    });
+    void recordAction("receipt", {
+      transaction: {
+        id: tx.id,
+        merchant: tx.merchant,
+        amount: tx.amount,
+        categoryId: tx.categoryId,
+        date: tx.date,
+        note: tx.note,
+      },
     });
     setToast(`Added ${formatMoney(tx.amount)} to ${tx.categoryId}.`);
     setDraft(null);

@@ -1,9 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, ShoppingBag, Sparkles } from "lucide-react";
+import { XpHistory } from "@/components/ProgressUI";
 import { Panel, ProgressBar, SectionHeader } from "@/components/ui";
 import { contributions, formatMoney, user } from "@/lib/data";
+import { loadProfile } from "@/lib/profile";
+import { useProgress } from "@/lib/progress-store";
 import { useShop } from "@/lib/shop-store";
 import type { ShopItem, ShopItemType } from "@/lib/shop";
 
@@ -20,8 +23,26 @@ export default function ProfilePage() {
     isEquipped,
     equippedItems,
   } = useShop();
+  const { snapshot, recordAction } = useProgress();
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
   const [toast, setToast] = useState<string | null>(null);
+
+  const [displayName, setDisplayName] = useState(user.name);
+  useEffect(() => {
+    const profile = loadProfile();
+    if (profile?.name) setDisplayName(profile.name);
+  }, []);
+
+  const level = snapshot?.level ?? user.level;
+  const xpInto = snapshot?.xpInto ?? user.xp;
+  const xpForNext = snapshot?.xpForNext ?? user.xpToNext;
+  const streak = snapshot?.streak ?? user.streak;
+  const initials = displayName
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   const visibleItems = useMemo(
     () => (filter === "All" ? catalog : catalog.filter((item) => item.type === filter)),
@@ -36,6 +57,9 @@ export default function ProfilePage() {
   function onBuy(item: ShopItem) {
     const result = buy(item.id);
     flash(result.message);
+    if (result.ok) {
+      void recordAction("shop", { itemId: item.id });
+    }
   }
 
   function onEquipToggle(item: ShopItem) {
@@ -78,7 +102,7 @@ export default function ProfilePage() {
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative">
             <div className="grid h-16 w-16 place-items-center rounded-full bg-primary text-xl font-extrabold text-white shadow-soft">
-              {user.avatarInitials}
+              {initials}
             </div>
             {equippedItems.badge ? (
               <span
@@ -100,7 +124,7 @@ export default function ProfilePage() {
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-2xl font-extrabold text-ink">{user.name}</h2>
+              <h2 className="text-2xl font-extrabold text-ink">{displayName}</h2>
               {equippedItems.badge ? (
                 <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary-deep">
                   {equippedItems.badge.glyph} {equippedItems.badge.name}
@@ -110,14 +134,14 @@ export default function ProfilePage() {
             <p className="text-sm text-muted">{user.handle}</p>
             <div className="mt-3">
               <div className="mb-1 flex justify-between text-sm font-semibold">
-                <span>Level {user.level}</span>
+                <span>Level {level}</span>
                 <span className="text-muted">
-                  {user.xp}/{user.xpToNext} XP
+                  {xpInto}/{xpForNext} XP
                 </span>
               </div>
               <ProgressBar
-                value={user.xp}
-                max={user.xpToNext}
+                value={xpInto}
+                max={xpForNext}
                 color={equippedItems.theme?.theme?.accent}
               />
             </div>
@@ -125,8 +149,8 @@ export default function ProfilePage() {
         </div>
 
         <div className="mt-5 grid grid-cols-3 gap-3">
-          <Stat label="Level" value={String(user.level)} tone="primary" />
-          <Stat label="Streak" value={`${user.streak}d`} tone="accent" />
+          <Stat label="Level" value={String(level)} tone="primary" />
+          <Stat label="Streak" value={`${streak}d`} tone="accent" />
           <Stat label="Points" value={points.toLocaleString()} tone="sun" />
         </div>
 
@@ -259,6 +283,10 @@ export default function ProfilePage() {
           })}
         </div>
       </Panel>
+
+      <div className="animate-rise-delay-3">
+        <XpHistory />
+      </div>
 
       <Panel className="animate-rise-delay-3">
         <SectionHeader

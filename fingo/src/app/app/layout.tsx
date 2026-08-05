@@ -3,8 +3,8 @@ import Link from "next/link";
 import { AppNav } from "@/components/AppNav";
 import { CoachWidget } from "@/components/CoachWidget";
 import { LogoutButton } from "@/components/LogoutButton";
+import { HeaderStats } from "@/components/ProgressUI";
 import { GoalPointsCard, ShopShell } from "@/components/ShopShell";
-import { user } from "@/lib/data";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -19,12 +19,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               FinGo
             </Link>
             <div className="flex items-center gap-2 text-sm sm:gap-3">
-              <span className="rounded-full bg-sun-soft px-3 py-1 font-bold text-[#8a6a00]">
-                🔥 {user.streak} day streak
-              </span>
-              <span className="hidden rounded-full bg-primary-soft px-3 py-1 font-bold text-primary-deep sm:inline">
-                Lv {user.level}
-              </span>
+              <HeaderStats />
               <LogoutButton />
             </div>
           </div>

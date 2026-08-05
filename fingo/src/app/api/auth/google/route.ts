@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_COOKIE, encodeSession, GOOGLE_STATE_COOKIE } from "@/lib/auth";
+import { ensureUser } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +27,11 @@ export function GET(request: NextRequest) {
       email: "alex.rivera@gmail.com",
       name: onboardingName || "Alex Rivera",
     };
+    try {
+      ensureUser(user.email, user.name);
+    } catch {
+      // Login still succeeds if the database is unavailable.
+    }
     const response = NextResponse.redirect(new URL(next, request.nextUrl.origin));
     response.cookies.set(AUTH_COOKIE, encodeSession(user), {
       httpOnly: true,

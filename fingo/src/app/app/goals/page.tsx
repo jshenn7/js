@@ -1,4 +1,5 @@
 import { Heart, UserPlus } from "lucide-react";
+import { GoalBoostButton } from "@/components/ProgressUI";
 import { Avatar, Panel, ProgressBar, SectionHeader } from "@/components/ui";
 import { contributions, formatMoney, goals } from "@/lib/data";
 
@@ -43,16 +44,19 @@ export default function GoalsPage() {
               <p className="mt-2 text-sm font-semibold text-ink-soft">
                 {formatMoney(goal.raised)} of {formatMoney(goal.target)}
               </p>
-              <div className="mt-4 flex items-center gap-2">
-                {goal.members.map((m, i) => (
-                  <Avatar
-                    key={m.name}
-                    initials={m.initials}
-                    size="sm"
-                    tone={(["primary", "sky", "accent", "sun"] as const)[i % 4]}
-                  />
-                ))}
-                <span className="ml-1 text-sm text-muted">{goal.members.length} savers</span>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  {goal.members.map((m, i) => (
+                    <Avatar
+                      key={m.name}
+                      initials={m.initials}
+                      size="sm"
+                      tone={(["primary", "sky", "accent", "sun"] as const)[i % 4]}
+                    />
+                  ))}
+                  <span className="ml-1 text-sm text-muted">{goal.members.length} savers</span>
+                </div>
+                <GoalBoostButton />
               </div>
               <ul className="mt-4 space-y-2 border-t border-line pt-3">
                 {goal.members.map((m) => (

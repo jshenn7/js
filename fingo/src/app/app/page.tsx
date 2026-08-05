@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Camera, LoaderCircle, MessageCircleQuestion, Sparkles } from "lucide-react";
 import { MomentumChart } from "@/components/MomentumChart";
+import { QuestsPanel } from "@/components/ProgressUI";
 import { SpendingPieChart } from "@/components/SpendingPieChart";
 import { Panel, ProgressBar, SectionHeader } from "@/components/ui";
 import { formatMoney, tipOfDay, user } from "@/lib/data";
@@ -151,6 +152,8 @@ export default function HomeDashboard() {
           </div>
         </div>
       </Panel>
+
+      <QuestsPanel className="animate-rise-delay-2" />
 
       <Panel className="animate-rise-delay-2">
         <SectionHeader

@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { AUTH_COOKIE, demoAccount, encodeSession } from "@/lib/auth";
+import { ensureUser, saveProfileRow } from "@/lib/db";
 
 type LoginBody = {
   email?: string;
   password?: string;
   demo?: boolean;
   name?: string;
+  profile?: { employment?: string; salary?: number | null; goal?: string | null };
 };
 
 export async function POST(request: Request) {
@@ -40,6 +42,13 @@ export async function POST(request: Request) {
         email,
         name: onboardingName || email.split("@")[0]?.replace(/[._]/g, " ") || "Saver",
       };
+
+  try {
+    ensureUser(user.email, user.name);
+    if (body.profile) saveProfileRow(user.email, body.profile);
+  } catch {
+    // Login still succeeds if the database is unavailable.
+  }
 
   const response = NextResponse.json({ ok: true, user });
   response.cookies.set(AUTH_COOKIE, encodeSession(user), {
