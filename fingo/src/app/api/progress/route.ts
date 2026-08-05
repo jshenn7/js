@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_COOKIE, decodeSession } from "@/lib/auth";
-import { ensureUser, getDb } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import {
   ACTION_XP,
   dayKey,
@@ -149,7 +149,6 @@ function sessionFrom(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const session = sessionFrom(request);
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
-  ensureUser(session.email, session.name);
 
   const levelBefore = levelFromXp(totalXpFor(session.email)).level;
   let completedQuests: CompletedQuest[] = [];
@@ -202,7 +201,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   }
 
-  ensureUser(session.email, session.name);
   const db = getDb();
 
   if (action === "receipt" && body.transaction?.merchant && body.transaction.amount) {

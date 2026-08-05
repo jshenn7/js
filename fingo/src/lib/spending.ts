@@ -42,12 +42,14 @@ export const categoryOptions: Array<{ id: CategoryId; name: string }> = [
   { id: "housing", name: "Housing" },
 ];
 
-export function createDefaultSpendingState(): SpendingState {
+export function createDefaultSpendingState(options?: { seeded?: boolean }): SpendingState {
+  // Seeded demo numbers only for the demo account; everyone else starts at $0 spent.
+  const seeded = Boolean(options?.seeded);
   return {
     categories: seedCategories.map((c) => ({
       id: c.id as CategoryId,
       name: c.name,
-      spent: c.spent,
+      spent: seeded ? c.spent : 0,
       budget: c.budget,
       color: c.color,
     })),

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_COOKIE, encodeSession, GOOGLE_STATE_COOKIE } from "@/lib/auth";
-import { ensureUser } from "@/lib/db";
+import { saveProfileRow, upsertGoogleUser } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +11,23 @@ function loginRedirect(request: NextRequest, error: string) {
   const response = NextResponse.redirect(url);
   response.cookies.delete(GOOGLE_STATE_COOKIE);
   return response;
+}
+
+type OAuthState = {
+  nonce?: string;
+  next?: string;
+  name?: string;
+  employment?: string;
+  salary?: string;
+  goal?: string;
+};
+
+function parseState(raw: string): OAuthState | null {
+  try {
+    return JSON.parse(Buffer.from(raw, "base64url").toString("utf8")) as OAuthState;
+  } catch {
+    return null;
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -28,7 +45,11 @@ export async function GET(request: NextRequest) {
     return loginRedirect(request, "Google sign-in was cancelled or expired. Try again.");
   }
 
-  const next = state.split(":").slice(1).join(":") || "/app";
+  const parsed = parseState(state) || {};
+  const next =
+    parsed.next && parsed.next.startsWith("/") && !parsed.next.startsWith("//")
+      ? parsed.next
+      : "/app";
 
   try {
     const redirectUri = new URL("/api/auth/google/callback", request.nextUrl.origin);
@@ -54,25 +75,27 @@ export async function GET(request: NextRequest) {
     const profile = (await userRes.json()) as { email?: string; name?: string };
     if (!profile.email) throw new Error("Google account has no email.");
 
-    const user = {
-      email: profile.email,
-      name: profile.name || profile.email.split("@")[0] || "Saver",
-    };
+    const displayName =
+      (parsed.name || "").trim() ||
+      profile.name ||
+      profile.email.split("@")[0] ||
+      "Saver";
 
-    try {
-      ensureUser(user.email, user.name);
-    } catch {
-      // Login still succeeds if the database is unavailable.
+    const user = upsertGoogleUser(profile.email, displayName);
+    if (parsed.employment || parsed.salary || parsed.goal) {
+      saveProfileRow(user.email, {
+        employment: parsed.employment || null,
+        salary: parsed.salary ? Number(parsed.salary) : null,
+        goal: parsed.goal || null,
+      });
     }
 
-    const response = NextResponse.redirect(
-      new URL(next.startsWith("/") ? next : "/app", request.nextUrl.origin),
-    );
+    const response = NextResponse.redirect(new URL(next, request.nextUrl.origin));
     response.cookies.delete(GOOGLE_STATE_COOKIE);
     response.cookies.set(AUTH_COOKIE, encodeSession(user), {
       httpOnly: true,
       sameSite: "lax",
-      secure: false,
+      secure: process.env.VERCEL === "1",
       path: "/",
       maxAge: 60 * 60 * 24 * 14,
     });

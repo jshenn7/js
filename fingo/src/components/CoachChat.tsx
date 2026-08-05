@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { LoaderCircle, Send } from "lucide-react";
+import { useAccount } from "@/lib/account-store";
 import { coachStarters } from "@/lib/data";
 import { loadProfile } from "@/lib/profile";
 import { useProgress } from "@/lib/progress-store";
@@ -38,6 +39,7 @@ type CoachChatProps = {
 export const CoachChat = forwardRef<CoachChatHandle, CoachChatProps>(
   function CoachChat({ compact = false, onBusyChange }, ref) {
     const { recordAction } = useProgress();
+    const { user: account } = useAccount();
     const [messages, setMessages] = useState<Message[]>([GREETING]);
     const [input, setInput] = useState("");
     const [busy, setBusyState] = useState(false);
@@ -58,12 +60,13 @@ export const CoachChat = forwardRef<CoachChatHandle, CoachChatProps>(
 
     // Personalize the greeting after mount (profile lives in localStorage).
     useEffect(() => {
-      const profile = loadProfile();
-      if (!profile?.name) return;
+      const profile = loadProfile(account?.email);
+      const name = profile?.name || account?.name;
+      if (!name) return;
       setMessages((prev) =>
-        prev.map((m) => (m.id === "m0" ? greetingFor(profile.name) : m)),
+        prev.map((m) => (m.id === "m0" ? greetingFor(name) : m)),
       );
-    }, []);
+    }, [account?.email, account?.name]);
 
     useImperativeHandle(ref, () => ({ send: (text: string) => void send(text) }));
 
@@ -91,7 +94,7 @@ export const CoachChat = forwardRef<CoachChatHandle, CoachChatProps>(
                 role: m.role === "user" ? "user" : "assistant",
                 content: m.text,
               })),
-            profile: loadProfile() || undefined,
+            profile: loadProfile(account?.email) || undefined,
           }),
         });
 

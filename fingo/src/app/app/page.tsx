@@ -8,6 +8,7 @@ import { QuestsPanel } from "@/components/ProgressUI";
 import { SpendingPieChart } from "@/components/SpendingPieChart";
 import { Panel, ProgressBar, SectionHeader } from "@/components/ui";
 import { formatMoney, tipOfDay, user } from "@/lib/data";
+import { useAccount } from "@/lib/account-store";
 import { loadProfile } from "@/lib/profile";
 import { useSpending } from "@/lib/spending-store";
 
@@ -15,14 +16,16 @@ type Tip = { title: string; body: string; source: "ai" | "static" };
 
 export default function HomeDashboard() {
   const { categories, transactions } = useSpending();
+  const { user: account } = useAccount();
   const topSpend = [...categories].sort((a, b) => b.spent - a.spent)[0];
   const latestReceipt = transactions[0];
 
   const [firstName, setFirstName] = useState(user.name.split(" ")[0]);
   useEffect(() => {
-    const profile = loadProfile();
+    const profile = loadProfile(account?.email);
     if (profile?.name) setFirstName(profile.name.split(/\s+/)[0]);
-  }, []);
+    else if (account?.name) setFirstName(account.name.split(/\s+/)[0]);
+  }, [account?.email, account?.name]);
 
   const [tip, setTip] = useState<Tip>({ ...tipOfDay, source: "static" });
   const [tipLoading, setTipLoading] = useState(true);
@@ -55,7 +58,7 @@ export default function HomeDashboard() {
               amount: t.amount,
               date: t.date,
             })),
-            profile: loadProfile() || undefined,
+            profile: loadProfile(account?.email) || undefined,
           }),
         });
         if (!res.ok) return null;

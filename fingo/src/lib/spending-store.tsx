@@ -4,10 +4,13 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { accountStorageKey, demoAccount } from "@/lib/auth";
+import { useAccount } from "@/lib/account-store";
 import {
   createDefaultSpendingState,
   SPENDING_STORAGE_KEY,
@@ -32,10 +35,10 @@ type SpendingContextValue = {
 };
 
 const SpendingContext = createContext<SpendingContextValue | null>(null);
-const defaultState = createDefaultSpendingState();
-const listeners = new Set<() => void>();
 
-let memoryState: SpendingState = defaultState;
+const listeners = new Set<() => void>();
+let activeEmail: string | null = null;
+let memoryState: SpendingState = createDefaultSpendingState({ seeded: true });
 let hasHydrated = false;
 
 function emit() {
@@ -56,18 +59,39 @@ function parseStored(raw: string | null): SpendingState | null {
   }
 }
 
+function defaultFor(email: string | null) {
+  return createDefaultSpendingState({
+    seeded: email === demoAccount.email,
+  });
+}
+
 function persist(next: SpendingState) {
   memoryState = next;
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(SPENDING_STORAGE_KEY, JSON.stringify(next));
+  if (typeof window !== "undefined" && activeEmail) {
+    window.localStorage.setItem(
+      accountStorageKey(SPENDING_STORAGE_KEY, activeEmail),
+      JSON.stringify(next),
+    );
   }
   emit();
 }
 
-function ensureHydrated() {
-  if (hasHydrated || typeof window === "undefined") return;
-  memoryState = parseStored(window.localStorage.getItem(SPENDING_STORAGE_KEY)) ?? defaultState;
+function bindAccount(email: string | null) {
+  if (typeof window === "undefined") return;
+  if (hasHydrated && activeEmail === email) return;
+  activeEmail = email;
+  if (!email) {
+    memoryState = createDefaultSpendingState({ seeded: false });
+    hasHydrated = false;
+    emit();
+    return;
+  }
+  memoryState =
+    parseStored(
+      window.localStorage.getItem(accountStorageKey(SPENDING_STORAGE_KEY, email)),
+    ) ?? defaultFor(email);
   hasHydrated = true;
+  emit();
 }
 
 function subscribe(listener: () => void) {
@@ -76,16 +100,22 @@ function subscribe(listener: () => void) {
 }
 
 function getClientSnapshot() {
-  ensureHydrated();
   return memoryState;
 }
 
 function getServerSnapshot() {
-  return defaultState;
+  return createDefaultSpendingState({ seeded: true });
 }
 
 export function SpendingProvider({ children }: { children: ReactNode }) {
+  const { ready: accountReady, user } = useAccount();
+  const email = user?.email || null;
   const state = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
+
+  useEffect(() => {
+    if (!accountReady) return;
+    bindAccount(email);
+  }, [accountReady, email]);
 
   const addReceipt = useCallback(
     (input: {
@@ -95,7 +125,7 @@ export function SpendingProvider({ children }: { children: ReactNode }) {
       date?: string;
       note?: string;
     }) => {
-      const current = getClientSnapshot();
+      const current = memoryState;
       const now = new Date();
       const tx: ReceiptTransaction = {
         id: `rx-${now.getTime()}-${current.transactions.length + 1}`,
@@ -123,18 +153,18 @@ export function SpendingProvider({ children }: { children: ReactNode }) {
   );
 
   const resetSpending = useCallback(() => {
-    persist(createDefaultSpendingState());
+    persist(defaultFor(activeEmail));
   }, []);
 
   const value = useMemo<SpendingContextValue>(
     () => ({
-      ready: hasHydrated || typeof window === "undefined",
+      ready: accountReady && hasHydrated,
       categories: state.categories,
       transactions: state.transactions,
       addReceipt,
       resetSpending,
     }),
-    [addReceipt, resetSpending, state.categories, state.transactions],
+    [accountReady, addReceipt, resetSpending, state.categories, state.transactions],
   );
 
   return <SpendingContext.Provider value={value}>{children}</SpendingContext.Provider>;

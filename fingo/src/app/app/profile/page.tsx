@@ -5,6 +5,7 @@ import { Check, ShoppingBag, Sparkles } from "lucide-react";
 import { XpHistory } from "@/components/ProgressUI";
 import { Panel, ProgressBar, SectionHeader } from "@/components/ui";
 import { contributions, formatMoney, user } from "@/lib/data";
+import { useAccount } from "@/lib/account-store";
 import { loadProfile } from "@/lib/profile";
 import { useProgress } from "@/lib/progress-store";
 import { useShop } from "@/lib/shop-store";
@@ -24,14 +25,16 @@ export default function ProfilePage() {
     equippedItems,
   } = useShop();
   const { snapshot, recordAction } = useProgress();
+  const { user: account } = useAccount();
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
   const [toast, setToast] = useState<string | null>(null);
 
   const [displayName, setDisplayName] = useState(user.name);
   useEffect(() => {
-    const profile = loadProfile();
+    const profile = loadProfile(account?.email);
     if (profile?.name) setDisplayName(profile.name);
-  }, []);
+    else if (account?.name) setDisplayName(account.name);
+  }, [account?.email, account?.name]);
 
   const level = snapshot?.level ?? user.level;
   const xpInto = snapshot?.xpInto ?? user.xp;

@@ -2,20 +2,23 @@
 
 import type { ReactNode } from "react";
 import { CelebrationOverlay } from "@/components/ProgressUI";
+import { AccountProvider } from "@/lib/account-store";
 import { ProgressProvider } from "@/lib/progress-store";
 import { ShopProvider, useShop } from "@/lib/shop-store";
 import { SpendingProvider } from "@/lib/spending-store";
 
 export function ShopShell({ children }: { children: ReactNode }) {
   return (
-    <ProgressProvider>
-      <ShopProvider>
-        <SpendingProvider>
-          {children}
-          <CelebrationOverlay />
-        </SpendingProvider>
-      </ShopProvider>
-    </ProgressProvider>
+    <AccountProvider>
+      <ProgressProvider>
+        <ShopProvider>
+          <SpendingProvider>
+            {children}
+            <CelebrationOverlay />
+          </SpendingProvider>
+        </ShopProvider>
+      </ProgressProvider>
+    </AccountProvider>
   );
 }
 

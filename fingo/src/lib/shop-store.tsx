@@ -4,10 +4,13 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { accountStorageKey, demoAccount } from "@/lib/auth";
+import { useAccount } from "@/lib/account-store";
 import { user } from "@/lib/data";
 import {
   createDefaultShopState,
@@ -39,10 +42,10 @@ type ShopContextValue = {
 };
 
 const ShopContext = createContext<ShopContextValue | null>(null);
-const defaultState = createDefaultShopState(user.goalPoints);
 const listeners = new Set<() => void>();
 
-let memoryState: ShopState = defaultState;
+let activeEmail: string | null = null;
+let memoryState: ShopState = createDefaultShopState(user.goalPoints);
 let hasHydrated = false;
 
 function emit() {
@@ -74,18 +77,39 @@ function parseStoredState(raw: string | null): ShopState | null {
   }
 }
 
+function defaultFor(email: string | null): ShopState {
+  // Demo account starts with the published Goal Points balance; new accounts start leaner.
+  const points = email === demoAccount.email ? user.goalPoints : 400;
+  return createDefaultShopState(points);
+}
+
 function persist(next: ShopState) {
   memoryState = next;
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(SHOP_STORAGE_KEY, JSON.stringify(next));
+  if (typeof window !== "undefined" && activeEmail) {
+    window.localStorage.setItem(
+      accountStorageKey(SHOP_STORAGE_KEY, activeEmail),
+      JSON.stringify(next),
+    );
   }
   emit();
 }
 
-function ensureHydrated() {
-  if (hasHydrated || typeof window === "undefined") return;
-  memoryState = parseStoredState(window.localStorage.getItem(SHOP_STORAGE_KEY)) ?? defaultState;
+function bindAccount(email: string | null) {
+  if (typeof window === "undefined") return;
+  if (hasHydrated && activeEmail === email) return;
+  activeEmail = email;
+  if (!email) {
+    memoryState = createDefaultShopState(0);
+    hasHydrated = false;
+    emit();
+    return;
+  }
+  memoryState =
+    parseStoredState(
+      window.localStorage.getItem(accountStorageKey(SHOP_STORAGE_KEY, email)),
+    ) ?? defaultFor(email);
   hasHydrated = true;
+  emit();
 }
 
 function subscribe(listener: () => void) {
@@ -94,25 +118,27 @@ function subscribe(listener: () => void) {
 }
 
 function getClientSnapshot() {
-  ensureHydrated();
   return memoryState;
 }
 
 function getServerSnapshot() {
-  return defaultState;
-}
-
-function useShopState() {
-  return useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
+  return createDefaultShopState(user.goalPoints);
 }
 
 export function ShopProvider({ children }: { children: ReactNode }) {
-  const state = useShopState();
+  const { ready: accountReady, user: account } = useAccount();
+  const email = account?.email || null;
+  const state = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
   const owned = useMemo(() => new Set(state.owned), [state.owned]);
+
+  useEffect(() => {
+    if (!accountReady) return;
+    bindAccount(email);
+  }, [accountReady, email]);
 
   const buy = useCallback((id: string) => {
     const item = getShopItem(id);
-    const current = getClientSnapshot();
+    const current = memoryState;
     const ownedNow = new Set(current.owned);
     if (!item) return { ok: false, message: "Item not found." };
     if (ownedNow.has(id)) return { ok: false, message: "You already own this." };
@@ -130,7 +156,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
 
   const equip = useCallback((id: string) => {
     const item = getShopItem(id);
-    const current = getClientSnapshot();
+    const current = memoryState;
     if (!item) return { ok: false, message: "Item not found." };
     if (!current.owned.includes(id)) return { ok: false, message: "Buy this item first." };
     persist({
@@ -141,7 +167,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const unequip = useCallback((type: ShopItemType) => {
-    const current = getClientSnapshot();
+    const current = memoryState;
     persist({
       ...current,
       equipped: { ...current.equipped, [type]: null },
@@ -150,7 +176,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<ShopContextValue>(
     () => ({
-      ready: hasHydrated || typeof window === "undefined",
+      ready: accountReady && hasHydrated,
       points: state.points,
       owned,
       equipped: state.equipped,
@@ -169,7 +195,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
         theme: getShopItem(state.equipped.Theme),
       },
     }),
-    [buy, equip, owned, state.equipped, state.points, unequip],
+    [accountReady, buy, equip, owned, state.equipped, state.points, unequip],
   );
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;

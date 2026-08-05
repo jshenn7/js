@@ -1,3 +1,5 @@
+import { accountStorageKey } from "@/lib/auth";
+
 export const PROFILE_KEY = "fingo-profile-v1";
 
 export type UserProfile = {
@@ -31,10 +33,10 @@ export function goalLabel(id: string | null | undefined) {
   return goalOptions.find((o) => o.id === id)?.label || null;
 }
 
-export function loadProfile(): UserProfile | null {
+export function loadProfile(email?: string | null): UserProfile | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(PROFILE_KEY);
+    const raw = window.localStorage.getItem(accountStorageKey(PROFILE_KEY, email));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<UserProfile>;
     if (!parsed || typeof parsed.name !== "string") return null;
@@ -50,10 +52,13 @@ export function loadProfile(): UserProfile | null {
   }
 }
 
-export function saveProfile(profile: Omit<UserProfile, "savedAt">) {
+export function saveProfile(
+  profile: Omit<UserProfile, "savedAt">,
+  email?: string | null,
+) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(
-    PROFILE_KEY,
+    accountStorageKey(PROFILE_KEY, email),
     JSON.stringify({ ...profile, savedAt: new Date().toISOString() }),
   );
 }
