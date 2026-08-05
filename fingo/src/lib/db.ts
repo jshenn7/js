@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
@@ -14,19 +14,27 @@ declare global {
  * Prefer a durable ./data dir; on hosts with a read-only project filesystem
  * (e.g. Vercel serverless) fall back to /tmp, which is writable but ephemeral.
  */
+function isWritableDir(dir: string) {
+  try {
+    mkdirSync(dir, { recursive: true });
+    const probe = join(dir, ".write-probe");
+    writeFileSync(probe, "");
+    rmSync(probe);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function resolveDbDir() {
   const candidates = [
     process.env.FINGO_DB_DIR,
-    join(process.cwd(), "data"),
+    // Serverless project dirs are read-only; go straight to /tmp there.
+    process.env.VERCEL ? null : join(process.cwd(), "data"),
     join(tmpdir(), "fingo-data"),
   ].filter((dir): dir is string => Boolean(dir));
   for (const dir of candidates) {
-    try {
-      mkdirSync(dir, { recursive: true });
-      return dir;
-    } catch {
-      // try the next candidate
-    }
+    if (isWritableDir(dir)) return dir;
   }
   throw new Error("No writable directory for the FinGo database.");
 }
