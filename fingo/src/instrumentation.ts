@@ -5,6 +5,8 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   if (process.env.OPENAI_API_KEY || process.env.GROQ_API_KEY) return;
+  // No local Ollama on serverless hosts.
+  if (process.env.VERCEL) return;
 
   const host = process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
   const model = process.env.OLLAMA_MODEL || "llama3.2:3b";

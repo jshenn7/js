@@ -1,20 +1,38 @@
 import { mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { demoAccount } from "@/lib/auth";
 import { ACTION_XP, dayKey } from "@/lib/leveling";
-
-const DB_DIR = process.env.FINGO_DB_DIR || join(process.cwd(), "data");
-const DB_PATH = join(DB_DIR, "fingo.db");
 
 declare global {
   // Reuse one connection across dev hot reloads and route modules.
   var __fingoDb: Database.Database | undefined;
 }
 
+/**
+ * Prefer a durable ./data dir; on hosts with a read-only project filesystem
+ * (e.g. Vercel serverless) fall back to /tmp, which is writable but ephemeral.
+ */
+function resolveDbDir() {
+  const candidates = [
+    process.env.FINGO_DB_DIR,
+    join(process.cwd(), "data"),
+    join(tmpdir(), "fingo-data"),
+  ].filter((dir): dir is string => Boolean(dir));
+  for (const dir of candidates) {
+    try {
+      mkdirSync(dir, { recursive: true });
+      return dir;
+    } catch {
+      // try the next candidate
+    }
+  }
+  throw new Error("No writable directory for the FinGo database.");
+}
+
 function createDb() {
-  mkdirSync(DB_DIR, { recursive: true });
-  const db = new Database(DB_PATH);
+  const db = new Database(join(resolveDbDir(), "fingo.db"));
   db.pragma("journal_mode = WAL");
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (

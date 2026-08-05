@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { buildCoachSystemPrompt, type CoachProfile } from "@/lib/coach-context";
 import { tipOfDay } from "@/lib/data";
+import { chatOnce } from "@/lib/llm";
 import { employmentLabel, goalLabel } from "@/lib/profile";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const OLLAMA_HOST = process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2:3b";
 
 type SpendingSnapshot = {
   categories?: Array<{ name?: string; spent?: number; budget?: number }>;
@@ -87,43 +85,30 @@ function describeSnapshot(snapshot: SpendingSnapshot) {
 }
 
 async function generateTip(snapshot: SpendingSnapshot): Promise<Tip | null> {
-  try {
-    const res = await fetch(`${OLLAMA_HOST}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: OLLAMA_MODEL,
-        stream: false,
-        keep_alive: "24h",
-        options: { temperature: 0.7, num_predict: 120 },
-        messages: [
-          {
-            role: "system",
-            content: `${buildCoachSystemPrompt(normalizeProfile(snapshot.profile))}\n\nTask: write today's Tip of the Day for the home screen. One specific, actionable tip grounded in the numbers above (use dollar amounts). Reply with ONLY compact JSON: {"title": string (max 5 words), "body": string (one sentence, max 30 words)}.`,
-          },
-          {
-            role: "user",
-            content: `Latest live data from my device:\n\n${describeSnapshot(snapshot) || "(no live data yet — use the monthly snapshot)"}\n\nGive me today's tip.`,
-          },
-        ],
-      }),
-      signal: AbortSignal.timeout(30000),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { message?: { content?: string } };
-    const json = extractJson(data.message?.content || "");
-    if (!json) return null;
-    const title = String(json.title || "").trim();
-    const body = String(json.body || "").trim();
-    if (!body) return null;
-    return {
-      title: title.slice(0, 48) || "Coach tip",
-      body: body.slice(0, 220),
-      source: "ai",
-    };
-  } catch {
-    return null;
-  }
+  const content = await chatOnce(
+    [
+      {
+        role: "system",
+        content: `${buildCoachSystemPrompt(normalizeProfile(snapshot.profile))}\n\nTask: write today's Tip of the Day for the home screen. One specific, actionable tip grounded in the numbers above (use dollar amounts). Reply with ONLY compact JSON: {"title": string (max 5 words), "body": string (one sentence, max 30 words)}.`,
+      },
+      {
+        role: "user",
+        content: `Latest live data from my device:\n\n${describeSnapshot(snapshot) || "(no live data yet — use the monthly snapshot)"}\n\nGive me today's tip.`,
+      },
+    ],
+    { temperature: 0.7, maxTokens: 120, timeoutMs: 30000 },
+  );
+  if (!content) return null;
+  const json = extractJson(content);
+  if (!json) return null;
+  const title = String(json.title || "").trim();
+  const body = String(json.body || "").trim();
+  if (!body) return null;
+  return {
+    title: title.slice(0, 48) || "Coach tip",
+    body: body.slice(0, 220),
+    source: "ai",
+  };
 }
 
 export async function POST(request: Request) {

@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { NextResponse } from "next/server";
+import { chatOnce } from "@/lib/llm";
 import {
   categoryOptions,
   guessCategory,
@@ -13,9 +14,6 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const OLLAMA_HOST = process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
-const TEXT_MODEL = process.env.OLLAMA_MODEL || "llama3.2:3b";
 
 const execFileAsync = promisify(execFile);
 
@@ -206,37 +204,24 @@ function normalizeResult(raw: Record<string, unknown>, fallbackText: string): Re
 
 async function structureWithLlm(ocrText: string): Promise<ReceiptParseResult | null> {
   if (!ocrText.trim()) return null;
-  try {
-    const res = await fetch(`${OLLAMA_HOST}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: TEXT_MODEL,
-        stream: false,
-        keep_alive: "24h",
-        options: { temperature: 0.1, num_predict: 180 },
-        messages: [
-          {
-            role: "system",
-            content:
-              "Extract receipt fields. Reply with ONLY compact JSON keys: merchant, amount (number), date (YYYY-MM-DD or empty), category (food|transport|leisure|subscriptions|health|housing), note.",
-          },
-          {
-            role: "user",
-            content: `OCR text from a receipt:\n\n${ocrText.slice(0, 1800)}`,
-          },
-        ],
-      }),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { message?: { content?: string } };
-    const content = data.message?.content || "";
-    const json = extractJson(content);
-    if (!json) return null;
-    return normalizeResult(json, ocrText);
-  } catch {
-    return null;
-  }
+  const content = await chatOnce(
+    [
+      {
+        role: "system",
+        content:
+          "Extract receipt fields. Reply with ONLY compact JSON keys: merchant, amount (number), date (YYYY-MM-DD or empty), category (food|transport|leisure|subscriptions|health|housing), note.",
+      },
+      {
+        role: "user",
+        content: `OCR text from a receipt:\n\n${ocrText.slice(0, 1800)}`,
+      },
+    ],
+    { temperature: 0.1, maxTokens: 180 },
+  );
+  if (!content) return null;
+  const json = extractJson(content);
+  if (!json) return null;
+  return normalizeResult(json, ocrText);
 }
 
 export async function POST(request: Request) {
