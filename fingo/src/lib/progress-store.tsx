@@ -41,6 +41,14 @@ type ProgressContextValue = {
         date?: string;
         note?: string;
       };
+      transactions?: Array<{
+        id?: string;
+        merchant?: string;
+        amount?: number;
+        categoryId?: string;
+        date?: string;
+        note?: string;
+      }>;
       itemId?: string;
     },
   ) => Promise<void>;

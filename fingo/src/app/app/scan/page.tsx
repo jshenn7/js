@@ -1,9 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, Check, ImagePlus, LoaderCircle, RefreshCw, Sparkles } from "lucide-react";
+import {
+  Camera,
+  Check,
+  Download,
+  FileSpreadsheet,
+  ImagePlus,
+  LoaderCircle,
+  RefreshCw,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { Panel, SectionHeader } from "@/components/ui";
 import { formatMoney } from "@/lib/data";
+import { parseTransactionsCsv, SAMPLE_CSV, type CsvRowDraft } from "@/lib/csv-import";
 import {
   categoryOptions,
   type CategoryId,
@@ -21,16 +32,21 @@ type Draft = {
 };
 
 export default function ScanPage() {
-  const { addReceipt, transactions, categories } = useSpending();
+  const { addReceipt, addReceipts, transactions, categories } = useSpending();
   const { recordAction } = useProgress();
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
+  const csvRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [confidence, setConfidence] = useState<ReceiptParseResult["confidence"] | null>(null);
+  const [csvRows, setCsvRows] = useState<CsvRowDraft[]>([]);
+  const [csvName, setCsvName] = useState<string | null>(null);
+  const [csvBusy, setCsvBusy] = useState(false);
+  const [csvError, setCsvError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!toast) return;
@@ -145,17 +161,104 @@ export default function ScanPage() {
     setError(null);
   }
 
+  async function onCsvFile(file: File | null) {
+    if (!file) return;
+    const isCsv =
+      file.name.toLowerCase().endsWith(".csv") ||
+      file.type === "text/csv" ||
+      file.type === "application/vnd.ms-excel" ||
+      file.type === "text/plain";
+    if (!isCsv) {
+      setCsvError("Please upload a .csv file.");
+      return;
+    }
+    setCsvError(null);
+    setCsvBusy(true);
+    try {
+      const text = await file.text();
+      const parsed = parseTransactionsCsv(text);
+      if (parsed.error || !parsed.rows.length) {
+        setCsvRows([]);
+        setCsvName(file.name);
+        setCsvError(parsed.error || "No transactions found in that CSV.");
+        return;
+      }
+      setCsvRows(parsed.rows);
+      setCsvName(file.name);
+      setToast(`Ready to import ${parsed.rows.length} transactions.`);
+    } catch {
+      setCsvError("Couldn’t read that CSV file.");
+    } finally {
+      setCsvBusy(false);
+      if (csvRef.current) csvRef.current.value = "";
+    }
+  }
+
+  function updateCsvRow(id: string, patch: Partial<CsvRowDraft>) {
+    setCsvRows((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+  }
+
+  function removeCsvRow(id: string) {
+    setCsvRows((prev) => prev.filter((row) => row.id !== id));
+  }
+
+  async function confirmCsvImport() {
+    if (!csvRows.length) return;
+    setCsvBusy(true);
+    setCsvError(null);
+    try {
+      const created = addReceipts(
+        csvRows.map((row) => ({
+          merchant: row.merchant,
+          amount: row.amount,
+          categoryId: row.categoryId,
+          date: row.date,
+          note: row.note,
+        })),
+      );
+      await recordAction("import", {
+        transactions: created.map((tx) => ({
+          id: tx.id,
+          merchant: tx.merchant,
+          amount: tx.amount,
+          categoryId: tx.categoryId,
+          date: tx.date,
+          note: tx.note,
+        })),
+      });
+      const total = created.reduce((sum, tx) => sum + tx.amount, 0);
+      setToast(`Imported ${created.length} transactions · ${formatMoney(total)}`);
+      setCsvRows([]);
+      setCsvName(null);
+    } catch {
+      setCsvError("Import failed. Please try again.");
+    } finally {
+      setCsvBusy(false);
+    }
+  }
+
+  function downloadSampleCsv() {
+    const blob = new Blob([SAMPLE_CSV], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "fingo-sample-transactions.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const recent = transactions.slice(0, 5);
+  const csvTotal = csvRows.reduce((sum, row) => sum + row.amount, 0);
 
   return (
     <div className="space-y-5">
       <div className="animate-rise flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
-            Scan receipt
+            Add spending
           </h1>
           <p className="mt-1 text-sm text-muted">
-            Snap a photo — FinGo reads the total and updates your spending
+            Snap a receipt or import a bank CSV — both update your budgets
           </p>
         </div>
         {toast ? (
@@ -238,6 +341,164 @@ export default function ScanPage() {
           <p className="mt-4 rounded-2xl bg-danger-soft px-3 py-2 text-sm font-semibold text-danger">
             {error}
           </p>
+        ) : null}
+      </Panel>
+
+      <Panel className="animate-rise-delay-2">
+        <SectionHeader
+          title="Import CSV"
+          subtitle="Upload a bank or spreadsheet export — Date, Description, Amount, Category"
+          action={
+            <button
+              type="button"
+              onClick={downloadSampleCsv}
+              className="tactile inline-flex items-center gap-1 rounded-full bg-bg px-3 py-1 text-xs font-bold text-ink-soft ring-1 ring-line"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Sample CSV
+            </button>
+          }
+        />
+
+        <input
+          ref={csvRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="hidden"
+          onChange={(e) => void onCsvFile(e.target.files?.[0] || null)}
+        />
+
+        <button
+          type="button"
+          disabled={csvBusy}
+          onClick={() => csvRef.current?.click()}
+          className="tactile flex w-full min-h-28 flex-col items-center justify-center gap-2 rounded-[1.25rem] border border-dashed border-sky/50 bg-sky-soft/40 px-4 py-6 text-center disabled:opacity-60"
+        >
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-sky text-white shadow-soft">
+            <FileSpreadsheet className="h-6 w-6" />
+          </span>
+          <span className="font-bold text-ink">
+            {csvBusy ? "Reading CSV…" : "Upload CSV file"}
+          </span>
+          <span className="text-xs text-muted">
+            Works with common bank exports (up to 200 rows)
+          </span>
+        </button>
+
+        {csvName ? (
+          <p className="mt-3 text-sm font-semibold text-ink-soft">
+            File: <span className="text-ink">{csvName}</span>
+            {csvRows.length
+              ? ` · ${csvRows.length} rows · ${formatMoney(csvTotal)}`
+              : null}
+          </p>
+        ) : null}
+
+        {csvError ? (
+          <p className="mt-3 rounded-2xl bg-danger-soft px-3 py-2 text-sm font-semibold text-danger">
+            {csvError}
+          </p>
+        ) : null}
+
+        {csvRows.length ? (
+          <>
+            <div className="mt-4 max-h-80 overflow-auto rounded-2xl border border-line">
+              <table className="w-full min-w-[520px] text-left text-sm">
+                <thead className="sticky top-0 bg-bg text-xs font-bold uppercase tracking-wider text-muted">
+                  <tr>
+                    <th className="px-3 py-2">Date</th>
+                    <th className="px-3 py-2">Merchant</th>
+                    <th className="px-3 py-2">Amount</th>
+                    <th className="px-3 py-2">Category</th>
+                    <th className="px-3 py-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {csvRows.map((row) => (
+                    <tr key={row.id} className="border-t border-line/70">
+                      <td className="px-3 py-2">
+                        <input
+                          type="date"
+                          value={row.date}
+                          onChange={(e) => updateCsvRow(row.id, { date: e.target.value })}
+                          className="w-[9.5rem] rounded-xl border border-line bg-surface px-2 py-1.5 text-xs outline-none ring-primary/30 focus:ring-2"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          value={row.merchant}
+                          onChange={(e) => updateCsvRow(row.id, { merchant: e.target.value })}
+                          className="w-full min-w-[8rem] rounded-xl border border-line bg-surface px-2 py-1.5 text-xs outline-none ring-primary/30 focus:ring-2"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={row.amount}
+                          onChange={(e) =>
+                            updateCsvRow(row.id, { amount: Number(e.target.value) || 0 })
+                          }
+                          className="w-24 rounded-xl border border-line bg-surface px-2 py-1.5 text-xs outline-none ring-primary/30 focus:ring-2"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <select
+                          value={row.categoryId}
+                          onChange={(e) =>
+                            updateCsvRow(row.id, {
+                              categoryId: e.target.value as CategoryId,
+                            })
+                          }
+                          className="rounded-xl border border-line bg-surface px-2 py-1.5 text-xs outline-none ring-primary/30 focus:ring-2"
+                        >
+                          {categoryOptions.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-3 py-2">
+                        <button
+                          type="button"
+                          onClick={() => removeCsvRow(row.id)}
+                          className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-danger-soft hover:text-danger"
+                          aria-label="Remove row"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={csvBusy || !csvRows.length}
+                onClick={() => void confirmCsvImport()}
+                className="tactile inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
+              >
+                <Check className="h-4 w-4" />
+                Import {csvRows.length} to spending
+              </button>
+              <button
+                type="button"
+                disabled={csvBusy}
+                onClick={() => {
+                  setCsvRows([]);
+                  setCsvName(null);
+                  setCsvError(null);
+                }}
+                className="tactile rounded-2xl border border-line bg-surface px-4 py-3 text-sm font-bold text-ink"
+              >
+                Cancel
+              </button>
+            </div>
+          </>
         ) : null}
       </Panel>
 

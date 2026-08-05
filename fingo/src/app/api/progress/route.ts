@@ -170,18 +170,28 @@ export async function GET(request: NextRequest) {
   });
 }
 
-const VALID_ACTIONS: ActionKind[] = ["receipt", "coach", "bills", "goal", "shop"];
+const VALID_ACTIONS: ActionKind[] = [
+  "receipt",
+  "import",
+  "coach",
+  "bills",
+  "goal",
+  "shop",
+];
+
+type TxBody = {
+  id?: string;
+  merchant?: string;
+  amount?: number;
+  categoryId?: string;
+  date?: string;
+  note?: string;
+};
 
 type PostBody = {
   action?: ActionKind;
-  transaction?: {
-    id?: string;
-    merchant?: string;
-    amount?: number;
-    categoryId?: string;
-    date?: string;
-    note?: string;
-  };
+  transaction?: TxBody;
+  transactions?: TxBody[];
   itemId?: string;
 };
 
@@ -203,22 +213,36 @@ export async function POST(request: NextRequest) {
 
   const db = getDb();
 
+  const insertTx = db.prepare(
+    `INSERT INTO transactions (id, email, merchant, amount, category_id, date, note, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO NOTHING`,
+  );
+
+  const toInsert: TxBody[] = [];
   if (action === "receipt" && body.transaction?.merchant && body.transaction.amount) {
-    db.prepare(
-      `INSERT INTO transactions (id, email, merchant, amount, category_id, date, note, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(id) DO NOTHING`,
-    ).run(
-      body.transaction.id || `rx-${Date.now()}`,
-      session.email,
-      String(body.transaction.merchant).slice(0, 80),
-      body.transaction.amount,
-      String(body.transaction.categoryId || "food"),
-      String(body.transaction.date || dayKey()),
-      body.transaction.note ? String(body.transaction.note).slice(0, 200) : null,
-      new Date().toISOString(),
-    );
+    toInsert.push(body.transaction);
   }
+  if (action === "import" && Array.isArray(body.transactions)) {
+    toInsert.push(...body.transactions.slice(0, 200));
+  }
+
+  const writeMany = db.transaction((rows: TxBody[]) => {
+    rows.forEach((tx, index) => {
+      if (!tx.merchant || !tx.amount || tx.amount <= 0) return;
+      insertTx.run(
+        tx.id || `rx-${Date.now()}-${index}`,
+        session.email,
+        String(tx.merchant).slice(0, 80),
+        tx.amount,
+        String(tx.categoryId || "food"),
+        String(tx.date || dayKey()),
+        tx.note ? String(tx.note).slice(0, 200) : null,
+        new Date().toISOString(),
+      );
+    });
+  });
+  if (toInsert.length) writeMany(toInsert);
 
   if (action === "shop" && body.itemId) {
     db.prepare(

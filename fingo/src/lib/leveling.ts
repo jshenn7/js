@@ -1,4 +1,11 @@
-export type ActionKind = "checkin" | "receipt" | "coach" | "bills" | "goal" | "shop";
+export type ActionKind =
+  | "checkin"
+  | "receipt"
+  | "import"
+  | "coach"
+  | "bills"
+  | "goal"
+  | "shop";
 
 export type QuestCadence = "daily" | "weekly";
 
@@ -16,6 +23,7 @@ export type QuestDef = {
 export const ACTION_XP: Record<ActionKind, { xp: number; label: string; dailyCap: number }> = {
   checkin: { xp: 15, label: "Daily check-in", dailyCap: 1 },
   receipt: { xp: 40, label: "Scanned a receipt", dailyCap: 5 },
+  import: { xp: 50, label: "Imported a CSV of transactions", dailyCap: 2 },
   coach: { xp: 20, label: "Coached with FinGo AI", dailyCap: 3 },
   bills: { xp: 10, label: "Reviewed bills", dailyCap: 1 },
   goal: { xp: 30, label: "Boosted a shared goal", dailyCap: 3 },
@@ -40,6 +48,15 @@ export const QUESTS: QuestDef[] = [
     emoji: "🧾",
     target: 1,
     rewardXp: 40,
+  },
+  {
+    id: "q_import",
+    action: "import",
+    cadence: "daily",
+    label: "Import a CSV of spending",
+    emoji: "📄",
+    target: 1,
+    rewardXp: 35,
   },
   {
     id: "q_coach",

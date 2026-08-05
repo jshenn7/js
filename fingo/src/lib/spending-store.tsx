@@ -20,17 +20,20 @@ import {
   type SpendingState,
 } from "@/lib/spending";
 
+type ReceiptInput = {
+  merchant: string;
+  amount: number;
+  categoryId: CategoryId;
+  date?: string;
+  note?: string;
+};
+
 type SpendingContextValue = {
   ready: boolean;
   categories: SpendingCategory[];
   transactions: ReceiptTransaction[];
-  addReceipt: (input: {
-    merchant: string;
-    amount: number;
-    categoryId: CategoryId;
-    date?: string;
-    note?: string;
-  }) => ReceiptTransaction;
+  addReceipt: (input: ReceiptInput) => ReceiptTransaction;
+  addReceipts: (inputs: ReceiptInput[]) => ReceiptTransaction[];
   resetSpending: () => void;
 };
 
@@ -117,39 +120,46 @@ export function SpendingProvider({ children }: { children: ReactNode }) {
     bindAccount(email);
   }, [accountReady, email]);
 
-  const addReceipt = useCallback(
-    (input: {
-      merchant: string;
-      amount: number;
-      categoryId: CategoryId;
-      date?: string;
-      note?: string;
-    }) => {
-      const current = memoryState;
-      const now = new Date();
+  const addReceipts = useCallback((inputs: ReceiptInput[]) => {
+    if (!inputs.length) return [] as ReceiptTransaction[];
+    const current = memoryState;
+    const now = new Date();
+    const spentDelta = new Map<CategoryId, number>();
+    const created: ReceiptTransaction[] = [];
+
+    inputs.forEach((input, index) => {
+      const amount = Math.round(Math.abs(input.amount) * 100) / 100;
+      if (!Number.isFinite(amount) || amount <= 0) return;
       const tx: ReceiptTransaction = {
-        id: `rx-${now.getTime()}-${current.transactions.length + 1}`,
+        id: `rx-${now.getTime()}-${current.transactions.length + index + 1}`,
         merchant: input.merchant.trim() || "Receipt",
-        amount: Math.round(input.amount * 100) / 100,
+        amount,
         categoryId: input.categoryId,
         date: input.date || now.toISOString().slice(0, 10),
         note: input.note,
-        createdAt: now.toISOString(),
+        createdAt: new Date(now.getTime() + index).toISOString(),
       };
+      created.push(tx);
+      spentDelta.set(tx.categoryId, (spentDelta.get(tx.categoryId) || 0) + tx.amount);
+    });
 
-      const categories = current.categories.map((cat) =>
-        cat.id === input.categoryId
-          ? { ...cat, spent: Math.round((cat.spent + tx.amount) * 100) / 100 }
-          : cat,
-      );
+    const categories = current.categories.map((cat) => {
+      const delta = spentDelta.get(cat.id) || 0;
+      return delta
+        ? { ...cat, spent: Math.round((cat.spent + delta) * 100) / 100 }
+        : cat;
+    });
 
-      persist({
-        categories,
-        transactions: [tx, ...current.transactions].slice(0, 50),
-      });
-      return tx;
-    },
-    [],
+    persist({
+      categories,
+      transactions: [...created, ...current.transactions].slice(0, 200),
+    });
+    return created;
+  }, []);
+
+  const addReceipt = useCallback(
+    (input: ReceiptInput) => addReceipts([input])[0],
+    [addReceipts],
   );
 
   const resetSpending = useCallback(() => {
@@ -162,9 +172,10 @@ export function SpendingProvider({ children }: { children: ReactNode }) {
       categories: state.categories,
       transactions: state.transactions,
       addReceipt,
+      addReceipts,
       resetSpending,
     }),
-    [accountReady, addReceipt, resetSpending, state.categories, state.transactions],
+    [accountReady, addReceipt, addReceipts, resetSpending, state.categories, state.transactions],
   );
 
   return <SpendingContext.Provider value={value}>{children}</SpendingContext.Provider>;

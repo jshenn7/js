@@ -6,7 +6,7 @@ import { Home, CalendarClock, Camera, Users, UserRound, Sparkles } from "lucide-
 
 const links = [
   { href: "/app", label: "Home", icon: Home },
-  { href: "/app/scan", label: "Scan", icon: Camera },
+  { href: "/app/scan", label: "Add", icon: Camera },
   { href: "/app/bills", label: "Bills", icon: CalendarClock },
   { href: "/app/goals", label: "Goals", icon: Users },
   { href: "/app/coach", label: "Coach", icon: Sparkles },
